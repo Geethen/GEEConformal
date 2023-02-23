@@ -1,6 +1,10 @@
 import ee
+# This class is used to calculate average accuracy and confusion matrix for a set of folds
+# The class takes in an multi-band image of classification results, number of classes and number of folds
+# A confusion matrix is calculated by summing up the confusion matrixes from each fold
+# The average accuracy is calculated by weighting each fold by the number of samples in each fold
 class prepareMetrics:
-    def __init__(self, classImage, nClasses, nFolds):
+    def __init__(self, classImage: ee.Image, nClasses: int, nFolds: int):
         self.classImage = classImage
         self.nClasses = nClasses
         self.nFolds = nFolds
