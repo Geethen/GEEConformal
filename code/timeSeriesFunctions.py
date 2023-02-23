@@ -141,7 +141,7 @@ class prepareTS:
         # return the image, with the date set
         return ee.Image(S2).set({'system:time_start': start})
         
-    def _CreateS1Mosaic(self, date_begin):
+    def _createS1Mosaic(self, date_begin):
         #start and end dates for this image
         start = ee.Date(date_begin)
         end = ee.Date(date_begin).advance(self.day_int, 'day')
@@ -320,4 +320,4 @@ class prepareTS:
         if satellite == 'S1':
             filled = ee.ImageCollection(composites.map(lambda image: gapFillS1(image))).toBands()
 
-        return filled
+        return filled.regexpRename('^(.{0})', 'band')
