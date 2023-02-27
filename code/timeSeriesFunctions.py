@@ -3,6 +3,17 @@ import ee
 class prepareTS:
     def __init__(self, Date_Start,Date_End,day_int,study_area,CLOUD_THRESH,BANDS):
         """Pre-process an image collection in preparration for a time-series problem
+        
+        Args: 
+            Date_Start (ee.Date): start date of time series
+            Date_End (ee.Date): end date of time series
+            day_int (int): number of days to summarise in each image e.g 30 days = 12 images per year
+            study_area (ee.Geometry): area of interest
+            CLOUD_THRESH (int): cloud probabillity threshold
+            BANDS (list): which bands to keep.
+
+        Returns:
+            ee.ImageCollection: image collection with cloud probability band, summarised to day_int, and gap filled.
 
         # Example Usuage
         
@@ -38,7 +49,13 @@ class prepareTS:
     
     def joinS2(self, s2_level):
         """
-        # Add cloud probability band to sentinel2
+        Add cloud probability band to sentinel2
+
+        Args:
+            s2_level (int): Either 1 or 2. level 1 or 2 sentinel 2 data
+
+        Returns:
+            ee.ImageCollection: image collection with cloud probability band
         """
         self.s2_level = s2_level
         # Join the S2 and S2cloud collections.
@@ -73,6 +90,15 @@ class prepareTS:
         return ee.ImageCollection(joinedS2)
     
     def joinS1S2(self, S1_filled, S2_filled):
+        """Joins Sentinel 1 and Sentinel 2 data
+
+        Args:
+            S1_filled (ee.ImageCollection): Sentinel 1 data
+            S2_filled (ee.ImageCollection): Sentinel 2 data
+
+        Returns:
+            ee.ImageCollection: image collection with Sentinel 1 and Sentinel 2 data
+        """
         # Join S1 and S2
         inner_join = ee.Join.inner()
 
@@ -142,6 +168,15 @@ class prepareTS:
         return ee.Image(S2).set({'system:time_start': start})
         
     def _createS1Mosaic(self, date_begin):
+        """Creates a Sentinel 1 mosaic for every date in the sequence.
+
+        Args:
+            date_begin (ee.Date): The date to begin the mosaic.
+
+        Returns:
+            An image with the Sentinel 1 mosaic for the specified date range.
+            Returns an ee.Image object.
+        """
         #start and end dates for this image
         start = ee.Date(date_begin)
         end = ee.Date(date_begin).advance(self.day_int, 'day')
@@ -177,7 +212,14 @@ class prepareTS:
         return ee.Image(S1).toFloat().set({'system:time_start': start})
     
     def createMosaic(self, satellite: str, s2_level: int = None):
-        """Creates a Sentinel 2 mosaic for every date in the sequence."""
+        """Creates a Sentinel-1 or Sentinel-2 mosaic for every date in the sequence.
+        
+        Args:
+            satellite (str): The satellite to use. Either 'S2' or 'S1'.
+            s2_level (int): The Sentinel 2 level to use. Either 1, 2, or 3.
+            
+        Returns:
+            An image with the Sentinel 1/2 mosaic for the specified date range."""
         self.s2_level = s2_level
 
         # setup a sequence of dates
@@ -193,6 +235,14 @@ class prepareTS:
         return mosaic
     
     def shadow_cloud_mask(self, image):
+        """Creates a cloud and shadow mask for a Sentinel 2 image.
+
+        Args:
+            image (ee.Image): The Sentinel 2 image.
+
+        Returns:
+            A Sentinel-2 image with the cloud and shadow masked.
+        """
     
         def potential_shadow(cloud_height):
             cloud_height = ee.Number(cloud_height)

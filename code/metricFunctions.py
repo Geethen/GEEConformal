@@ -4,7 +4,13 @@ import ee
 # A confusion matrix is calculated by summing up the confusion matrixes from each fold
 # The average accuracy is calculated by weighting each fold by the number of samples in each fold
 class prepareMetrics:
+    """class to calculate average accuracy and confusion matrix for a set of folds"""
     def __init__(self, classImage: ee.Image, nClasses: int, nFolds: int):
+        """classImage (ee.Image): multi-band image of classification results. Each band is
+          one classification output from a fold.
+           nClasses (int): number of classes
+           nFolds (int): number of folds"""
+        
         self.classImage = classImage
         self.nClasses = nClasses
         self.nFolds = nFolds
@@ -24,7 +30,9 @@ class prepareMetrics:
         return acc_final
     
     def confusionMatrix(self):
-        """sum confusion matrixes for each fold"""
+        """sum confusion matrices for each fold
+        
+        returns ee.Image with accuracy and confusion matrices as properties"""
         
         # first create an empty confusion matrix
         first = ee.Array(ee.List.repeat(0, self.nClasses)).repeat(axis=1,copies= self.nClasses)

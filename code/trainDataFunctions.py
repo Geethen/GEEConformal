@@ -1,7 +1,17 @@
 import ee
 
 class prepareTrainingData:
+    """This class prepares training data for machine learning models."""
     def __init__(self, covariates, points, targetProperty, nFolds, proj= 'EPSG:4326'):
+        """
+        Args:
+            covariates (ee.Image): ee.Image
+            points (ee.FeatureCollection): ee.FeatureCollection
+            targetProperty (str): name of the property that contains the target variable
+            nFolds (int): number of folds for cross validation
+            proj (str): projection of the data
+        """
+
         self.covariates = covariates
         self.points = points
         self.targetProperty = targetProperty
@@ -11,6 +21,12 @@ class prepareTrainingData:
     def addCoordProperty(self, features):
         """
         This function adds coordinates to the points
+
+        Args:
+            features (ee.FeatureCollection): ee.FeatureCollection
+
+        Returns:
+            ee.FeatureCollection: ee.FeatureCollection
         """
         def coords(feature):
             return feature.geometry().transform(proj = self.proj).coordinates()
@@ -27,6 +43,11 @@ class prepareTrainingData:
         return points
     
     def covariatesToPoints(self):
+        """
+        This function extracts the covariates at the points
+        
+        Returns:
+            ee.FeatureCollection: ee.FeatureCollection"""
         # Extract image values at points
         allData = self.covariates.reduceRegions(collection = self._preparePoints(),
                                        reducer = ee.Reducer.first(),

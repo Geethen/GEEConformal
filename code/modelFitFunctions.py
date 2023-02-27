@@ -1,12 +1,24 @@
 import ee
 class prepareModel:
+    """class to prepare data for model fitting"""
     def __init__(self, dataset, responseCol, inferenceImage, bandNames):
+        """dataset (ee.ImageCollection): training data
+           responseCol (str): name of the response variable
+           inferenceImage (ee.Image): image to be classified
+           bandNames (list): list of band names"""
         self.dataset = dataset
         self.responseCol = responseCol
         self.inferenceImage = inferenceImage
         self.bandNames = bandNames
         
     def _kFoldCV(self, fold):
+        """function to run k-fold cross validation
+
+        Args: 
+            fold (int): fold number
+        
+        Returns:
+            ee.Image: classified image with accuracy and confusion matrix as properties"""
         
         self.seed = fold
         

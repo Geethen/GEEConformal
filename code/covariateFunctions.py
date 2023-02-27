@@ -1,7 +1,12 @@
 import ee
 
 class prepareCovariates:
+    """ This class prepares the covariates for the model. It adds rotated coordinates and
+      topographic bands to the covariates image."""
     def __init__(self, covariates, proj = 'EPSG:4326', nAngles = None):
+        """covariates (ee.Image): ee.Image
+           proj (str): an ee.Projection or str. custom projection can be defined using a wkt string.
+           nAngles (int): number of angles to use for rotated coordinates (optional)"""
         self.covariates = covariates
         self.proj = proj
         self.nAngles = nAngles
@@ -44,6 +49,13 @@ class prepareCovariates:
     def addCovariates(self, rotatedCoords = True, topoBands = True):
         """
         This function adds all covariates to the image
+        
+        Args:
+            rotatedCoords (bool): Add rotated coordinates
+            topoBands (bool): a=Add topographic bands
+
+        Returns:
+            ee.Image: image with added covariates
         """
         if rotatedCoords:
             self.covariates = self.addRotatedCoords()
