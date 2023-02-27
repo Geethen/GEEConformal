@@ -1,7 +1,7 @@
 import ee
 
 class prepareTS:
-    def __init__(self, Date_Start,Date_End,day_int,study_area,CLOUD_THRESH,BANDS):
+    def __init__(self, Date_Start: ee.Date,Date_End: ee.Date,day_int: int,study_area: ee.Geometry,CLOUD_THRESH: int,BANDS: list):
         """Pre-process an image collection in preparration for a time-series problem
         
         Args: 
@@ -47,7 +47,7 @@ class prepareTS:
         self.BANDS = BANDS
     
     
-    def joinS2(self, s2_level):
+    def joinS2(self, s2_level: int) -> ee.ImageCollection:
         """
         Add cloud probability band to sentinel2
 
@@ -89,7 +89,7 @@ class prepareTS:
         joinedS2 = innerJoinedS2.map(lambda feature: ee.Image.cat(feature.get('primary'), feature.get('secondary')))    
         return ee.ImageCollection(joinedS2)
     
-    def joinS1S2(self, S1_filled, S2_filled):
+    def joinS1S2(self, S1_filled: ee.ImageCollection, S2_filled: ee.ImageCollection) -> ee.ImageCollection:
         """Joins Sentinel 1 and Sentinel 2 data
 
         Args:
@@ -114,8 +114,12 @@ class prepareTS:
 
         return S12_final
 
-    def _createS2Mosaic(self, date_begin, s2_level = None):
+    def _createS2Mosaic(self, date_begin: ee.Date, s2_level: int = None):
         """Creates a Sentinel 2 mosaic for every date in the sequence.
+
+        Args:
+            date_begin (ee.Date): start date of time series
+            s2_level (int, optional): Either 1 or 2. level 1 or 2 sentinel 2 data. Defaults to None.
 
         Returns:
             An image with the Sentinel 2 mosaic for the specified date range.
@@ -167,7 +171,7 @@ class prepareTS:
         # return the image, with the date set
         return ee.Image(S2).set({'system:time_start': start})
         
-    def _createS1Mosaic(self, date_begin):
+    def _createS1Mosaic(self, date_begin: ee.Date):
         """Creates a Sentinel 1 mosaic for every date in the sequence.
 
         Args:
@@ -234,7 +238,7 @@ class prepareTS:
 
         return mosaic
     
-    def shadow_cloud_mask(self, image):
+    def shadow_cloud_mask(self, image: ee.Image)-> ee.Image:
         """Creates a cloud and shadow mask for a Sentinel 2 image.
 
         Args:

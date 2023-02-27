@@ -15,7 +15,7 @@ class prepareMetrics:
         self.nClasses = nClasses
         self.nFolds = nFolds
         
-    def averageAccuracy(self):
+    def averageAccuracy(self) -> ee.Number:
         """calculate av acc  by  weighting for validation sample size"""
         acc_arr = self.classImage.aggregate_array('acc')
         acc_num = self.classImage.aggregate_array('num')
@@ -29,9 +29,9 @@ class prepareMetrics:
         print(f'The average accuracy is {acc_final.getInfo()} across {self.nFolds} folds')
         return acc_final
     
-    def confusionMatrix(self):
+    def confusionMatrix(self) -> ee.Image:
         """sum confusion matrices for each fold
-        
+
         returns ee.Image with accuracy and confusion matrices as properties"""
         
         # first create an empty confusion matrix

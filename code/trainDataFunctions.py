@@ -2,7 +2,7 @@ import ee
 
 class prepareTrainingData:
     """This class prepares training data for machine learning models."""
-    def __init__(self, covariates, points, targetProperty, nFolds, proj= 'EPSG:4326'):
+    def __init__(self, covariates: ee.Image, points: ee.FeatureCollection, targetProperty: str, nFolds: int, proj: str = 'EPSG:4326'):
         """
         Args:
             covariates (ee.Image): ee.Image
@@ -18,7 +18,7 @@ class prepareTrainingData:
         self.nFolds = nFolds
         self.proj = proj
 
-    def addCoordProperty(self, features):
+    def addCoordProperty(self, features: ee.FeatureCollection) -> ee.FeatureCollection:
         """
         This function adds coordinates to the points
 
@@ -42,7 +42,7 @@ class prepareTrainingData:
         points = points.cluster(clusterer)
         return points
     
-    def covariatesToPoints(self):
+    def covariatesToPoints(self) -> ee.FeatureCollection:
         """
         This function extracts the covariates at the points
         

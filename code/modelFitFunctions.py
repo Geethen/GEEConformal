@@ -1,7 +1,7 @@
 import ee
 class prepareModel:
     """class to prepare data for model fitting"""
-    def __init__(self, dataset, responseCol, inferenceImage, bandNames):
+    def __init__(self, dataset: ee.ImageCollection, responseCol: str, inferenceImage: ee.Image, bandNames: list):
         """dataset (ee.ImageCollection): training data
            responseCol (str): name of the response variable
            inferenceImage (ee.Image): image to be classified
@@ -11,7 +11,7 @@ class prepareModel:
         self.inferenceImage = inferenceImage
         self.bandNames = bandNames
         
-    def _kFoldCV(self, fold):
+    def _kFoldCV(self, fold: int):
         """function to run k-fold cross validation
 
         Args: 
@@ -63,6 +63,6 @@ class prepareModel:
 
         return classified
     
-    def kFoldCV(self, nFolds):
+    def kFoldCV(self, nFolds: int) -> ee.ImageCollection:
         result = ee.ImageCollection(ee.List.sequence(0,nFolds-1).map(lambda fold: self._kFoldCV(fold)))
         return result

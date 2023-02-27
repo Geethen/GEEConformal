@@ -3,7 +3,7 @@ import ee
 class prepareCovariates:
     """ This class prepares the covariates for the model. It adds rotated coordinates and
       topographic bands to the covariates image."""
-    def __init__(self, covariates, proj = 'EPSG:4326', nAngles = None):
+    def __init__(self, covariates: ee.Image, proj: str = 'EPSG:4326', nAngles: int = None):
         """covariates (ee.Image): ee.Image
            proj (str): an ee.Projection or str. custom projection can be defined using a wkt string.
            nAngles (int): number of angles to use for rotated coordinates (optional)"""
@@ -11,7 +11,7 @@ class prepareCovariates:
         self.proj = proj
         self.nAngles = nAngles
  
-    def _addRotatedCoords(self, ang):
+    def _addRotatedCoords(self, ang: int) -> ee.Image:
         """
         //adds bands with coordinates rotated to account for spatial autocorrelation
         // Reference: Møller, A. B., Beucher, A. M., Pouladi, N., & Greve, M. H. (2020).  
@@ -24,14 +24,14 @@ class prepareCovariates:
          ang.subtract(xy.select('y').divide(xy.select('x')).atan()).cos())
         return z
     
-    def addRotatedCoords(self):
+    def addRotatedCoords(self) -> ee.Image:
         # Spatial autocorr using rotated coordinates
         steps = ee.List.sequence(0, 1, count = self.nAngles).slice(0,-1)
         steps = steps.map(lambda ang: self._addRotatedCoords(ang))
         steps = ee.ImageCollection(steps).toBands().regexpRename('^(.{0})', 'band')
         return self.covariates.addBands(steps)
                             
-    def addTopoBands(self):
+    def addTopoBands(self) -> ee.Image:
         """
         Adds SRTM elevation, CHILI, Topographic diversity, slope and aspect
         """
@@ -46,10 +46,10 @@ class prepareCovariates:
                             
         return self.covariates.addBands([elevation, chili, tpi, slope, aspect])
     
-    def addCovariates(self, rotatedCoords = True, topoBands = True):
+    def addCovariates(self, rotatedCoords: bool = True, topoBands: bool = True) -> ee.Image:
         """
         This function adds all covariates to the image
-        
+
         Args:
             rotatedCoords (bool): Add rotated coordinates
             topoBands (bool): a=Add topographic bands
