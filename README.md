@@ -33,9 +33,9 @@
     <br />
     <a href="https://github.com/Geethen/Invasive_Species_Mapping/blob/main/example_usuage">View More Examples</a>
     ·
-    <a href="https://github.com/Geethen/geeml/issues">Report Bug</a>
+    <a href="https://github.com/Geethen/Invasive_Species_Mapping/issues">Report Bug</a>
     ·
-    <a href="https://github.com/Geethen/geeml/issues">Request Feature</a>
+    <a href="https://github.com/Geethen/Invasive_Species_Mapping/issues">Request Feature</a>
   </p>
 </div>
 
