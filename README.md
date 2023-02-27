@@ -110,7 +110,7 @@ sys.path.insert(0,'/content/Invasive_Species_Mapping/code')
     from metricFunctions import prepareMetrics
    ```
 
-_For more examples, please refer to the [Documentation](https://github.com/Geethen/Invasive_Species_Mapping/blob/main/example_usuage)_
+_For more examples, please refer to the [Example usuage folder](https://github.com/Geethen/Invasive_Species_Mapping/blob/main/example_usuage)_
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
