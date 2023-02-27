@@ -89,7 +89,6 @@ For the [end-to-end example provided](https://github.com/Geethen/Invasive_Specie
 
 <!-- USAGE EXAMPLES -->
 ## Basic usage
-Download the NASADEM elevation data for Kenya.
 
    ```python
 # Install and import packages
