@@ -182,16 +182,16 @@ The code provided here has been ported from code originally written by Glenn Mon
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/Geethen/geeml.svg?style=for-the-badge
-[contributors-url]: https://github.com/Geethen/geeml/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/Geethen/geeml.svg?style=for-the-badge
-[forks-url]: https://github.com/Geethen/geeml/network/members
-[stars-shield]: https://img.shields.io/github/stars/Geethen/geeml.svg?style=for-the-badge
-[stars-url]: https://github.com/Geethen/geeml/stargazers
-[issues-shield]: https://img.shields.io/github/issues/Geethen/geeml.svg?style=for-the-badge
-[issues-url]: https://github.com/Geethen/geeml/issues
-[license-shield]: https://img.shields.io/github/license/Geethen/geeml.svg?style=for-the-badge
-[license-url]: https://github.com/Geethen/geeml/blob/master/LICENSE.txt
+[contributors-shield]: https://img.shields.io/github/contributors/Geethen/Invasive_Species_Mapping.svg?style=for-the-badge
+[contributors-url]: https://github.com/Geethen/Invasive_Species_Mapping/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/Geethen/Invasive_Species_Mapping.svg?style=for-the-badge
+[forks-url]: https://github.com/Geethen/Invasive_Species_Mapping/network/members
+[stars-shield]: https://img.shields.io/github/stars/Geethen/Invasive_Species_Mapping.svg?style=for-the-badge
+[stars-url]: https://github.com/Geethen/Invasive_Species_Mapping/stargazers
+[issues-shield]: https://img.shields.io/github/issues/Geethen/Invasive_Species_Mapping.svg?style=for-the-badge
+[issues-url]: https://github.com/Geethen/Invasive_Species_Mapping/issues
+[license-shield]: https://img.shields.io/github/license/Geethen/Invasive_Species_Mapping.svg?style=for-the-badge
+[license-url]: https://github.com/Geethen/Invasive_Species_Mapping/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://linkedin.com/in/linkedin_username
 [product-screenshot]: images/screenshot.png
