@@ -1,7 +1,7 @@
 import ee
 
 class prepareTS:
-    def __init__(self, Date_Start: ee.Date,Date_End: ee.Date,day_int: int,study_area: ee.Geometry,CLOUD_THRESH: int,BANDS: list):
+    def __init__(self, Date_Start: ee.Date = None,Date_End: ee.Date = None,day_int: int = None,study_area: ee.Geometry = None,CLOUD_THRESH: int = None,BANDS: list = None):
         """Pre-process an image collection in preparration for a time-series problem
         
         Args: 
