@@ -37,7 +37,7 @@ class prepareModel:
             'minLeafPopulation': 1,
             'variablesPerSplit': 20
         }).train(**{
-            'features': self.dataset,
+            'features': training,
             'classProperty':'code',
             'inputProperties': self.bandNames
         })
