@@ -1,7 +1,8 @@
 import ee
+from typing import Union
 
 class prepareTS:
-    def __init__(self, Date_Start: ee.Date = None,Date_End: ee.Date = None,day_int: int = None,study_area: ee.Geometry = None,CLOUD_THRESH: int = None,BANDS: list = None):
+    def __init__(self, Date_Start: ee.Date = None,Date_End: ee.Date = None,day_int: int = None,study_area: ee.Geometry = None,CLOUD_THRESH: int = None,BANDS: Union[list, dict] = None):
         """Pre-process an image collection in preparration for a time-series problem
         
         Args: 
@@ -10,7 +11,7 @@ class prepareTS:
             day_int (int): number of days to summarise in each image e.g 30 days = 12 images per year
             study_area (ee.Geometry): area of interest
             CLOUD_THRESH (int): cloud probabillity threshold
-            BANDS (list): which bands to keep.
+            BANDS (list | dict): which bands to keep.
 
         Returns:
             ee.ImageCollection: image collection with cloud probability band, summarised to day_int, and gap filled.
@@ -88,31 +89,6 @@ class prepareTS:
         # Map a function to merge the results in the output FeatureCollection
         joinedS2 = innerJoinedS2.map(lambda feature: ee.Image.cat(feature.get('primary'), feature.get('secondary')))    
         return ee.ImageCollection(joinedS2)
-    
-    def joinS1S2(self, S1_filled: ee.ImageCollection, S2_filled: ee.ImageCollection) -> ee.ImageCollection:
-        """Joins Sentinel 1 and Sentinel 2 data
-
-        Args:
-            S1_filled (ee.ImageCollection): Sentinel 1 data
-            S2_filled (ee.ImageCollection): Sentinel 2 data
-
-        Returns:
-            ee.ImageCollection: image collection with Sentinel 1 and Sentinel 2 data
-        """
-        # Join S1 and S2
-        inner_join = ee.Join.inner()
-
-        # Specify an equals filter for image timestamps.
-        filter_S12 = ee.Filter.equals(leftField='system:time_start', rightField='system:time_start')
-
-        inner_joined_S12 = inner_join.apply(S2_filled, S1_filled, filter_S12)
-
-        # Map a function to merge the results in the output ImageCollection.
-        joined_S12 = inner_joined_S12.map(lambda feature: ee.Image.cat(feature.get('primary'), feature.get('secondary')))
-
-        S12_final = ee.ImageCollection(joined_S12)
-
-        return S12_final
 
     def _createS2Mosaic(self, date_begin: ee.Date, s2_level: int = None):
         """Creates a Sentinel 2 mosaic for every date in the sequence.
@@ -131,6 +107,10 @@ class prepareTS:
         start = ee.Date(date_begin)
         end = ee.Date(date_begin).advance(self.day_int, 'day')
         date_range = ee.DateRange(start, end)
+        if isinstance(self.BANDS, dict):
+            bands = self.BANDS['S2']
+        else:
+            bands = self.BANDS
 
         # create collection each time step
         S2_collection = (self.joinS2(self.s2_level).filterDate(date_range)
@@ -152,21 +132,20 @@ class prepareTS:
                                     'RED': image.select('B4'),
                                     'BLUE': image.select('B2')
                                 }).rename(['evi'])))
-                        .select(self.BANDS))
+                        .select(bands))
 
         # mosaic collection into a single image
         # if we have multiple obs, we keep the image with the highest ndvi
         S2_mosaic = S2_collection.qualityMosaic('ndvi')
-        S2_mosaic_bands = self.BANDS
 
         # need to deal with cases in which we have no image for the time period
         # if we do have an image, we just keep the mosaic
         # if we don't have an image we insert an empty image with the same band names
         S2 = ee.Algorithms.If(S2_collection.size(),
                                S2_mosaic,
-                               ee.ImageCollection(ee.List(S2_mosaic_bands).map(lambda band: ee.Image()))\
+                               ee.ImageCollection(ee.List(bands).map(lambda band: ee.Image()))\
                                .toBands()\
-                               .rename(S2_mosaic_bands))
+                               .rename(bands))
 
         # return the image, with the date set
         return ee.Image(S2).set({'system:time_start': start})
@@ -185,6 +164,11 @@ class prepareTS:
         start = ee.Date(date_begin)
         end = ee.Date(date_begin).advance(self.day_int, 'day')
         date_range = ee.DateRange(start, end)
+        if isinstance(self.BANDS, dict):
+            bands = self.BANDS['S1']
+        else:
+            bands = self.BANDS
+
         
         #create collection each time step
         S1_collection = ee.ImageCollection("COPERNICUS/S1_GRD") \
@@ -195,37 +179,35 @@ class prepareTS:
             .filterMetadata('instrumentMode','equals','IW') \
             .filterMetadata('orbitProperties_pass','equals','ASCENDING') \
             .map(lambda image: image.addBands(image.select(['VH']).divide(image.select(['VV'])).rename(['VH/VV']))) \
-            .select(self.BANDS)
+            .select(bands)
         
         #mosaic collection into a single image
         #if we have multiple obs we take mean
         S1_mosaic = S1_collection.mean()
-        S1_mosaic_bands = self.BANDS
         
         #need to deal with cases in which we have no image for the time period
         #if we do have an image, we just keep the mosaic
         #if we dont have an image we insert an empty image with the same bands names
         S1 = ee.Algorithms.If(S1_collection.size(),
                                S1_mosaic,
-                               ee.ImageCollection(ee.List(S1_mosaic_bands) \
+                               ee.ImageCollection(ee.List(bands) \
                                                   .map(lambda band: ee.Image())) \
                                .toBands() \
-                               .rename(S1_mosaic_bands))
+                               .rename(bands))
         
         #return the image, with the date set
         return ee.Image(S1).toFloat().set({'system:time_start': start})
     
-    def createMosaic(self, satellite: str, s2_level: int = None):
+    def createMosaic(self, satellite: str):
         """Creates a Sentinel-1 or Sentinel-2 mosaic for every date in the sequence.
         
         Args:
             satellite (str): The satellite to use. Either 'S2' or 'S1'.
-            s2_level (int): The Sentinel 2 level to use. Either 1, 2, or 3.
+            s2_level (int): The Sentinel 2 level to use. Either 1 or 2.
             
         Returns:
             An image with the Sentinel 1/2 mosaic for the specified date range."""
-        self.s2_level = s2_level
-
+        
         # setup a sequence of dates
         n_days = self.Date_End.difference(self.Date_Start,'day').round()
         dates = ee.List.sequence(0, n_days, self.day_int)
@@ -304,18 +286,21 @@ class prepareTS:
         Args:
             composites: A collection of composite images.
                 Must be an ee.ImageCollection object.
-            satellite: The satellite for which to create the gap-filling function. Must be either 'S2' or 'S1'.
+            satellite: The satellite for which to create a gap-filled mosaic. Must be either 'S2' or 'S1' or 'S1S2'.
             s2_level: The level of Sentinel 2 data to use. Must be either 1 or 2. This corresponds to L1C or L2A respectively.
 
         Returns:
             A function that applies gap-filling to an image.
             The function takes an ee.Image object as input and returns an ee.Image object.
         """
-        self.s2_level = s2_level
+        self.s2_level = s2_level # globally set for use by creteMosaic function
         if satellite == 'S2':
-            composites = ee.ImageCollection(self.createMosaic('S2', self.s2_level))
+            composites2 = ee.ImageCollection(self.createMosaic('S2'))
         elif satellite == 'S1':
-            composites = ee.ImageCollection(self.createMosaic('S1'))
+            composites1 = ee.ImageCollection(self.createMosaic('S1'))
+        elif satellite == 'S1S2':
+            composites1 = ee.ImageCollection(self.createMosaic('S1'))
+            composites2 = ee.ImageCollection(self.createMosaic('S2'))
         
         def gapFillS2(image: ee.Image) -> ee.Image:
             """Applies gap-filling to an image.
@@ -330,12 +315,12 @@ class prepareTS:
             """
             currentDate = ee.Date(image.get('system:time_start'))
             # 6 month median
-            med6Image = composites.filterDate(
+            med6Image = composites2.filterDate(
                 currentDate.advance(-3, 'month'), 
                 currentDate.advance(3, 'month')
             ).median()
             # 2 month median
-            med2Image = composites.filterDate(
+            med2Image = composites2.filterDate(
                 currentDate.advance(-1, 'month'), 
                 currentDate.advance(1, 'month')
             ).median()
@@ -356,12 +341,12 @@ class prepareTS:
             """
             currentDate = ee.Date(image.get('system:time_start'))
             # 2 week mean
-            mean2Image = composites.filterDate(
+            mean2Image = composites1.filterDate(
                 currentDate.advance(-2, 'week'), 
                 currentDate.advance(2, 'week')
             ).mean()
             # 8 week mean
-            mean8Image = composites.filterDate(
+            mean8Image = composites1.filterDate(
                 currentDate.advance(-8, 'week'), 
                 currentDate.advance(8, 'week')
             ).mean()
@@ -370,8 +355,12 @@ class prepareTS:
             return meanImage.set({'system:time_start': currentDate})
           
         if satellite == 'S2':
-            filled = ee.ImageCollection(composites.map(lambda image: gapFillS2(image))).toBands()
+            filled = ee.ImageCollection(composites2.map(lambda image: gapFillS2(image))).toBands()
         if satellite == 'S1':
-            filled = ee.ImageCollection(composites.map(lambda image: gapFillS1(image))).toBands()
+            filled = ee.ImageCollection(composites1.map(lambda image: gapFillS1(image))).toBands()
+        if satellite == 'S1S2':
+            filled1 = ee.ImageCollection(composites1.map(lambda image: gapFillS1(image))).toBands()
+            filled2 = ee.ImageCollection(composites2.map(lambda image: gapFillS2(image))).toBands()
+            filled = filled1.addBands(filled2)
 
         return filled.regexpRename('^(.{0})', 'band')
