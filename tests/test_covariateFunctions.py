@@ -1,7 +1,8 @@
 import ee
+import pytest
 
 # Tests that the addcovariates function handles invalid arguments correctly. tags: [edge case]
-def test_addCovariates_invalid(self):
+def test_addCovariates_invalid():
     # Edge case test for adding covariates with invalid arguments
     covariates = ee.Image("LANDSAT/LC08/C01/T1_SR/LC08_044034_20140318")
     proj = 'EPSG:4326'
@@ -11,7 +12,7 @@ def test_addCovariates_invalid(self):
         prep.addCovariates(rotatedCoords="True", topoBands="True")
 
 # Tests that the addtopobands function handles an image without elevation data correctly. tags: [edge case]
-def test_addTopoBands_noElevation(self):
+def test_addTopoBands_noElevation():
     # Edge case test for adding topographic bands to an image without elevation data
     covariates = ee.Image("LANDSAT/LC08/C01/T1_SR/LC08_044034_20140318")
     proj = 'EPSG:4326'
@@ -21,7 +22,7 @@ def test_addTopoBands_noElevation(self):
         prep.addTopoBands()
 
 # Tests that the addcovariates function adds topographic bands correctly when rotated coordinates are not added. tags: [happy path]
-def test_addCovariates_noRotatedCoords(self, mocker):
+def test_addCovariates_noRotatedCoords(mocker):
     # Create a mock ee.Image object
     covariates = mocker.Mock(spec=ee.Image)
     # Create an instance of the prepareCovariates class
@@ -32,7 +33,7 @@ def test_addCovariates_noRotatedCoords(self, mocker):
     assert result.bandNames().size().getInfo() > 5
 
 # Tests that the addcovariates function adds rotated coordinates correctly when topographic bands are not added. tags: [happy path]
-def test_addCovariates_noTopoBands(self, mocker):
+def test_addCovariates_noTopoBands(mocker):
     # Create a mock ee.Image object
     covariates = mocker.Mock(spec=ee.Image)
     # Create an instance of the prepareCovariates class
