@@ -26,7 +26,7 @@ class prepareMetrics:
         weight = acc_num.map(lambda item: ee.Number(item).divide(tot))
         # final accuracy
         acc_final = ee.Array(weight).multiply(ee.Array(acc_arr)).reduce(ee.Reducer.sum(),[0])
-        print(f'The average accuracy is {acc_final.getInfo()} across {self.nFolds} folds')
+        print(f'The average weighted accuracy is {acc_final.getInfo()} across {self.nFolds} folds')
         return acc_final
     
     def confusionMatrix(self) -> ee.Image:
