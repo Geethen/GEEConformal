@@ -1,0 +1,10 @@
+earthengine-api
+pytest
+geemap
+sklearn
+mapie
+pandas
+rasterio
+numpy
+tqdm 
+concurrent
