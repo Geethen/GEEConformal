@@ -36,6 +36,11 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt 
+    - name: Set up service account key
+      run: echo ${{ secrets.EE_SERVICE_ACCOUNT_KEY }} > key.json
+      env:
+        EE_ACCOUNT: github-action@ee-geethensingh.iam.gserviceaccount.com
+        EE_PRIVATE_KEY_FILE: key.json
     - name: Run pytest
       run: | 
         pytest code
