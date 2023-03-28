@@ -37,7 +37,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt 
     - name: Set up gcloud CLI
-      uses: google-github-actions/setup-gcloud@master
+      uses: google-github-actions/setup-ee@master
       with:
         service_account_key: ${{ secrets.EE_SERVICE_ACCOUNT_KEY }}
         project_id: ee-geethensingh     
