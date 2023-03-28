@@ -34,7 +34,9 @@ jobs:
     - name: Print Working Directory
       run: |
         pwd
-
+    - name: List Files in Working Directory
+      run: |
+        ls
     # - name: Set Working Directory
     #   run: cd /code
     #   working-directory: /code
@@ -45,4 +47,4 @@ jobs:
         pip install -r requirements.txt      
     - name: Run pytest
       run: | 
-        pytest tests
+        pytest
