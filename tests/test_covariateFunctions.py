@@ -1,7 +1,8 @@
 import ee
 import pytest
+import os.path
 import sys
-sys.path.insert(0,'code')
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from covariateFunctions import prepareCovariates
 
 # Tests that the addcovariates function handles invalid arguments correctly. tags: [edge case]
