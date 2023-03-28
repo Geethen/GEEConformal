@@ -37,9 +37,10 @@ jobs:
     - name: List Files in Working Directory
       run: |
         ls
-    # - name: Set Working Directory
-    #   run: cd /code
-    #   working-directory: /code
+
+    - name: Set Working Directory
+      run: cd code
+      working-directory: code
 
     - name: Install dependencies
       run: |
