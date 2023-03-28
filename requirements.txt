@@ -2,7 +2,7 @@ earthengine-api
 pytest
 pytest-mock
 geemap
-sklearn
+scikit-learn
 mapie
 pandas
 rasterio
