@@ -30,7 +30,7 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v2
       with:
-      repository: Geethen/Invasive_Species_Mapping
+        repository: Geethen/Invasive_Species_Mapping
 
     - name: Install dependencies
       run: |
