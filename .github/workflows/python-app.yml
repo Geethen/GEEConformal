@@ -32,8 +32,8 @@ jobs:
       with:
         repository: Geethen/Invasive_Species_Mapping
     - name: Set Working Directory
-      run: cd ./Invasive_Species_Mapping/code
-      working-directory: ./Invasive_Species_Mapping/code
+      run: cd ./code
+      working-directory: ./code
 
     - name: Install dependencies
       run: |
@@ -41,4 +41,4 @@ jobs:
         pip install -r requirements.txt      
     - name: Run pytest
       run: | 
-        pytest Invasive_Species_Mapping/tests
+        pytest ./tests
