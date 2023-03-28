@@ -39,7 +39,7 @@ jobs:
 
     - name: Decode secrets file and setup service account key
       run: |
-        echo "${{ secrets.EE_SERVICE_ACCOUNT_KEY }}" | base64 --decode > secrets.txt
+        echo "${{ secrets.EE_SERVICE_ACCOUNT_KEY }}" > secrets.txt
         certutil -decode secrets.txt secrets.json
     - name: Run pytest
       run: | 
