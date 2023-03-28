@@ -1,5 +1,7 @@
 import ee
 import pytest
+import sys
+sys.path.insert(0,'code')
 from covariateFunctions import prepareCovariates
 
 # Tests that the addcovariates function handles invalid arguments correctly. tags: [edge case]
