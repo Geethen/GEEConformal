@@ -2,10 +2,11 @@ import ee
 import pytest
 import os.path
 import sys
+from geemap import ee_initialize
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from covariateFunctions import prepareCovariates
 
-ee.Initialize()
+ee_initialize(token_name= 'EE_SERVICE_ACCOUNT_KEY', auth_mode = 'gcloud', service_account = True)
 
 # Tests that the addcovariates function handles invalid arguments correctly. tags: [edge case]
 def test_addCovariates_invalid():
