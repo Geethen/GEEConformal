@@ -5,6 +5,8 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from covariateFunctions import prepareCovariates
 
+ee.Initialize()
+
 # Tests that the addcovariates function handles invalid arguments correctly. tags: [edge case]
 def test_addCovariates_invalid():
     # Edge case test for adding covariates with invalid arguments
