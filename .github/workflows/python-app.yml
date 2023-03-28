@@ -32,8 +32,8 @@ jobs:
       with:
         repository: Geethen/Invasive_Species_Mapping
     - name: Set Working Directory
-      run: cd code
-      working-directory: code
+      run: cd Invasive_Species_Mapping/code
+      working-directory: Invasive_Species_Mapping/code
 
     - name: Install dependencies
       run: |
