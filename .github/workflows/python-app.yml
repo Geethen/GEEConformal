@@ -31,9 +31,11 @@ jobs:
       uses: actions/checkout@v2
       with:
         repository: Geethen/Invasive_Species_Mapping
-    - name: Set Working Directory
-      run: cd /code
-      working-directory: /code
+    - name: Verify Repository
+      run: ls -la
+    # - name: Set Working Directory
+    #   run: cd /code
+    #   working-directory: /code
 
     - name: Install dependencies
       run: |
