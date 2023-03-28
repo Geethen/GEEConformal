@@ -1,6 +1,6 @@
 import ee
 import pytest
-from covariateFunctions import prepareCovariates
+from Invasive_Species_Mapping.covariateFunctions import prepareCovariates
 
 # Tests that the addcovariates function handles invalid arguments correctly. tags: [edge case]
 def test_addCovariates_invalid():
