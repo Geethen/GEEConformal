@@ -4,7 +4,7 @@ import os.path
 import sys
 
 service_account = 'github-action@ee-geethensingh.iam.gserviceaccount.com'
-credentials = ee.ServiceAccountCredentials(service_account, 'secrets.json')
+credentials = ee.ServiceAccountCredentials(service_account, 'secret.json')
 ee.Initialize(credentials)
 
 # Tests that the addcovariates function handles invalid arguments correctly. tags: [edge case]
