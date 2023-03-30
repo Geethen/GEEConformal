@@ -27,11 +27,11 @@ jobs:
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.*') }}
         restore-keys: | 
           ${{ runner.os }}-pip-
-    - name: Checkout Repository
-      uses: actions/checkout@v2
-      with:
-        # path: code
-        repository: Geethen/Invasive_Species_Mapping
+    # - name: Checkout Repository
+    #   uses: actions/checkout@v2
+    #   with:
+    #     # path: code
+    #     repository: Geethen/Invasive_Species_Mapping
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -39,8 +39,8 @@ jobs:
     - name: Decode secrets file and setup service account key
       run: |
         echo ${{ secrets.EE_SERVICE_ACCOUNT_KEY }} | base64 -d > secret.json
-    - name: Set PYTHONPATH
-      run: export PYTHONPATH="${PYTHONPATH}:${{ github.workspace }}/code"
+    # - name: Set PYTHONPATH
+    #   run: export PYTHONPATH="${PYTHONPATH}:${{ github.workspace }}/code"
     - name: Run pytest
       run: |
         python -m pytest -v
