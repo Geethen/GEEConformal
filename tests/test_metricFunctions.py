@@ -9,6 +9,9 @@ def test_init():
     cImage = ee.Image.constant(1).addBands([ee.Image.constant(2), ee.Image.constant(3)])
     nClasses = 3
     nFolds = 3
-    with pytest.raises(TypeError):
+    try:
         prepareMetrics(cImage, nClasses, nFolds)
+    except TypeError:
+        pytest.fail("Could not initialise prep metrics")
+        
 
