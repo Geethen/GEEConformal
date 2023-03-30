@@ -43,4 +43,4 @@ jobs:
       run: export PYTHONPATH="${PYTHONPATH}:${{ github.workspace }}/code"
     - name: Run pytest
       run: |
-        pytest -v
+        python -m pytest -v

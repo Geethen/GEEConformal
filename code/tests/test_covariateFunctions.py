@@ -1,6 +1,6 @@
 import ee
 import pytest
-from covariateFunctions import prepareCovariates
+from code.covariateFunctions import prepareCovariates
 
 # encode json key file in linux (colab)
 # !cat secrets.json | base64 | tr -d '\n' > secrets.b64
