@@ -39,9 +39,8 @@ jobs:
     - name: Decode secrets file and setup service account key
       run: |
         echo ${{ secrets.EE_SERVICE_ACCOUNT_KEY }} | base64 -d > secret.json
-    - name: List files
-      run: ls
+    - name: Set PYTHONPATH
+      run: export PYTHONPATH="${PYTHONPATH}:${{ github.workspace }}/code"
     - name: Run pytest
-      run: | 
-        cd code
-        pytest
+      run: |
+        pytest -v

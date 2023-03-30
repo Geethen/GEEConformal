@@ -14,6 +14,10 @@ service_account = 'github-action@ee-geethensingh.iam.gserviceaccount.com'
 credentials = ee.ServiceAccountCredentials(service_account, 'secret.json')
 ee.Initialize(credentials)
 
+import sys
+sys.path.append("/path/to/module")
+
+
 # Tests that the addcovariates function handles invalid arguments correctly. tags: [edge case]
 def test_addCovariates_invalid():
     # Edge case test for adding covariates with invalid arguments
