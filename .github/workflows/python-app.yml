@@ -43,4 +43,5 @@ jobs:
       run: ls
     - name: Run pytest
       run: | 
-        pytest code
+        cd code
+        pytest
