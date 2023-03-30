@@ -42,7 +42,7 @@ def test_addTopoBands_noElevation():
 # Tests that the addcovariates function adds topographic bands correctly when rotated coordinates are not added. tags: [happy path]
 def test_addCovariates_noRotatedCoords(mocker):
     # Create a mock ee.Image object
-    covariates = mocker.Mock(spec=ee.Image)
+    covariates = ee.Image("LANDSAT/LC08/C01/T1_SR/LC08_044034_20140318")
     # Create an instance of the prepareCovariates class
     prep = prepareCovariates(covariates=covariates, proj='EPSG:4326', nAngles=4)
     # Call the addCovariates function with rotatedCoords set to False
@@ -56,7 +56,7 @@ def test_addCovariates_noRotatedCoords(mocker):
 # Tests that the addcovariates function adds rotated coordinates correctly when topographic bands are not added. tags: [happy path]
 def test_addCovariates_noTopoBands(mocker):
     # Create a mock ee.Image object
-    covariates = mocker.Mock(spec=ee.Image)
+    covariates = ee.Image("LANDSAT/LC08/C01/T1_SR/LC08_044034_20140318")
     # Create an instance of the prepareCovariates class
     prep = prepareCovariates(covariates=covariates, proj='EPSG:4326', nAngles=4)
     # Call the addCovariates function with topoBands set to False
