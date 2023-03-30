@@ -1,5 +1,5 @@
 import ee
-from ..code.metricFunctions import prepareMetrics
+from metricFunctions import prepareMetrics
 import pytest
 
 # Test the initialisation with dummy inputs
