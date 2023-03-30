@@ -1,7 +1,14 @@
 import ee
 import pytest
-import os.path
-import sys
+from covariateFunctions import prepareCovariates
+
+# encode json key file in linux (colab)
+# !cat secrets.json | base64 | tr -d '\n' > secrets.b64
+# test using this command
+# import ee
+# service_account = 'geethen.singh@gmail.com'
+# credentials = ee.ServiceAccountCredentials(service_account, 'secrets.json')
+# ee.Initialize(credentials)
 
 service_account = 'github-action@ee-geethensingh.iam.gserviceaccount.com'
 credentials = ee.ServiceAccountCredentials(service_account, 'secret.json')

@@ -1,9 +1,11 @@
 import ee
+from metricFunctions import prepareMetrics
+
 # Test the initialisation with dummy inputs
 def test_init():
     """Create a function to test the initialisation
       of prepareMetrics"""
-    cImage = ee.Image.Constant(1).addBands([ee.Image.Constant(2), ee.Image.Constant(3)])
+    cImage = ee.Image.constant(1).addBands([ee.Image.constant(2), ee.Image.constant(3)])
     nClasses = 3
     nFolds = 3
     with pytest.raises(TypeError):
