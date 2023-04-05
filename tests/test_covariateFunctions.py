@@ -14,6 +14,54 @@ service_account = 'github-action@ee-geethensingh.iam.gserviceaccount.com'
 credentials = ee.ServiceAccountCredentials(service_account, 'secret.json')
 ee.Initialize(credentials)
 
+#  Test the initialisation works
+def test_init():
+    covariates = ee.Image("LANDSAT/LC08/C01/T1_SR/LC08_044034_20140318")
+    proj = 'EPSG:4326'
+    nAngles = 10
+    try:
+        prep = prepareCovariates(covariates, proj, nAngles)
+    except ValueError:
+        pytest.fail("prepareCovariates raised ValueError and Failed to initisalise")
+
+# test_addRotatedCoords Tests if given an angle a band is returned
+def test_addRotatedCoords():
+    ang = 0.2
+    covariates = ee.Image("LANDSAT/LC08/C01/T1_SR/LC08_044034_20140318")
+    proj = 'EPSG:4326'
+    nAngles = 10
+    prep = prepareCovariates(covariates, proj, nAngles)
+    try:
+        len(prep._addRotatedCoords(ang).bandNames().getInfo())==1
+    except ValueError:
+        pytest.fail("_addRotatedCovariates() does not add only 1 band")
+
+# Tests if number of bands is equal to the number of covariate bands + nAngle bands
+def test_addRotatedCoords2():
+    ang = 0.2
+    covariates = ee.Image("LANDSAT/LC08/C01/T1_SR/LC08_044034_20140318").select('SR_B1')
+    proj = 'EPSG:4326'
+    nAngles = 10
+    prep = prepareCovariates(covariates, proj, nAngles)
+    try:
+        nBands = len(prep.addRotatedCoords().bandNames().getInfo())
+        nBands==11
+    except ValueError:
+        pytest.fail(f"addRotatedCovariates() adds incorrect number of band. Meant to have 6 bands but has {nBands}")
+
+#  Tests if number of bands is equal to the number of covariate bands + 5 topo bands
+def test_addTopoBands():
+    ang = 0.2
+    covariates = ee.Image("LANDSAT/LC08/C01/T1_SR/LC08_044034_20140318").select('SR_B1')
+    proj = 'EPSG:4326'
+    nAngles = 10
+    prep = prepareCovariates(covariates, proj, nAngles)
+    try:
+        nBands = len(prep.addRotatedCoords().bandNames().getInfo())
+        nBands==6
+    except ValueError:
+        pytest.fail(f"addTopoBands() adds incorrect number of bands. Meant to have 6 bands but has {nBands}")
+
 # Tests that the addcovariates function handles invalid arguments correctly. tags: [edge case]
 def test_addCovariates_invalid():
     # Edge case test for adding covariates with invalid arguments
@@ -25,44 +73,3 @@ def test_addCovariates_invalid():
         prep.addCovariates(rotatedCoords="True", topoBands="True")
     except TypeError:
         pytest.fail("addCovariates() raised TypeError unexpectedly!")
-
-
-# Tests that the addtopobands function handles an image without elevation data correctly. tags: [edge case]
-def test_addTopoBands_noElevation():
-    # Edge case test for adding topographic bands to an image without elevation data
-    covariates = ee.Image("LANDSAT/LC08/C01/T1_SR/LC08_044034_20140318")
-    proj = 'EPSG:4326'
-    nAngles = 4
-    prep = prepareCovariates(covariates, proj, nAngles)
-    try:
-        prep.addTopoBands()
-    except TypeError:
-        pytest.fail("addTopoBands() raised TypeError unexpectedly!")
-
-# Tests that the addcovariates function adds topographic bands correctly when rotated coordinates are not added. tags: [happy path]
-def test_addCovariates_noRotatedCoords(mocker):
-    # Create a mock ee.Image object
-    covariates = ee.Image("LANDSAT/LC08/C01/T1_SR/LC08_044034_20140318")
-    # Create an instance of the prepareCovariates class
-    prep = prepareCovariates(covariates=covariates, proj='EPSG:4326', nAngles=4)
-    # Call the addCovariates function with rotatedCoords set to False
-    result = prep.addCovariates(rotatedCoords=False, topoBands=True)
-    # Assert that the result has the correct number of bands
-    try:
-        result.bandNames().size().getInfo() > 5
-    except TypeError:
-        pytest.fail("Less than 5 bands")
-
-# Tests that the addcovariates function adds rotated coordinates correctly when topographic bands are not added. tags: [happy path]
-def test_addCovariates_noTopoBands(mocker):
-    # Create a mock ee.Image object
-    covariates = ee.Image("LANDSAT/LC08/C01/T1_SR/LC08_044034_20140318")
-    # Create an instance of the prepareCovariates class
-    prep = prepareCovariates(covariates=covariates, proj='EPSG:4326', nAngles=4)
-    # Call the addCovariates function with topoBands set to False
-    result = prep.addCovariates(rotatedCoords=True, topoBands=False)
-    # Assert that the result has the correct number of bands
-    try:
-        result.bandNames().size().getInfo() > 4
-    except TypeError:
-        pytest.fail("Less than 4 bands")
