@@ -44,7 +44,7 @@ def test_preparePoints():
 
 # Check if image attributes have been extracted - checks the number of properties
 def test_covariatesToPoints():
-    covariates = ee.Image("LANDSAT/LC08/C01/T1_SR/LC08_044034_20140318").select('SR_B1')
+    covariates = ee.Image("LANDSAT/LC08/C01/T1_SR/LC08_044034_20140318").select('B1')
     points = ee.FeatureCollection.randomPoints(covariates.geometry(), 10, 42, 1000).map(lambda ft: ft.set('target', 1))
     targetProperty = 'target'
     nFolds = 10

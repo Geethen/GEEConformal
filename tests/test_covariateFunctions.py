@@ -39,7 +39,7 @@ def test_addRotatedCoords():
 # Tests if number of bands is equal to the number of covariate bands + nAngle bands
 def test_addRotatedCoords2():
     ang = 0.2
-    covariates = ee.Image("LANDSAT/LC08/C01/T1_SR/LC08_044034_20140318").select('SR_B1')
+    covariates = ee.Image("LANDSAT/LC08/C01/T1_SR/LC08_044034_20140318").select('B1')
     proj = 'EPSG:4326'
     nAngles = 10
     prep = prepareCovariates(covariates, proj, nAngles)
@@ -52,7 +52,7 @@ def test_addRotatedCoords2():
 #  Tests if number of bands is equal to the number of covariate bands + 5 topo bands
 def test_addTopoBands():
     ang = 0.2
-    covariates = ee.Image("LANDSAT/LC08/C01/T1_SR/LC08_044034_20140318").select('SR_B1')
+    covariates = ee.Image("LANDSAT/LC08/C01/T1_SR/LC08_044034_20140318").select('B1')
     proj = 'EPSG:4326'
     nAngles = 10
     prep = prepareCovariates(covariates, proj, nAngles)
