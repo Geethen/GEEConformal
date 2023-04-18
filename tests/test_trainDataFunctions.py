@@ -49,7 +49,7 @@ def test_covariatesToPoints():
     targetProperty = 'target'
     nFolds = 10
     test = prepareTrainingData(covariates=covariates, points= points, targetProperty = targetProperty, nFolds=nFolds)
-    wCluster = test.covariatesToPoints()
+    data = test.covariatesToPoints()
     # should include 3 properties (target, cluster and SR_B1)
     try:
         len(data.propertyNames().getInfo())>3

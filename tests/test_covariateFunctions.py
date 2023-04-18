@@ -57,7 +57,7 @@ def test_addTopoBands():
     nAngles = 10
     prep = prepareCovariates(covariates, proj, nAngles)
     try:
-        nBands = len(prep.addRotatedCoords().bandNames().getInfo())
+        nBands = len(prep.addTopoBands().bandNames().getInfo())
         nBands==6
     except ValueError:
         pytest.fail(f"addTopoBands() adds incorrect number of bands. Meant to have 6 bands but has {nBands}")
