@@ -1,7 +1,6 @@
 import ee
-
 class prepareTrainingData:
-    """This class prepares training data for machine learning models."""
+    """This class prepares training data for the earth engine random forest model."""
     def __init__(self, covariates: ee.Image, points: ee.FeatureCollection, targetProperty: str, nFolds: int, proj: str = 'EPSG:4326'):
         """
         Args:
