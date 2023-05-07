@@ -250,8 +250,8 @@ class prepareTS:
         # select a cloud mask
         cloud_mask = image.select(['probability'])
 
-        img = image.select(['B1','B2','B3','B4','B6','B8A','B9','B10', 'B11','B12'],
-                 ['aerosol', 'blue', 'green', 'red', 'red2','red4','h2o', 'cirrus','swir1', 'swir2'])\
+        img = image.select(['B3','B12'],
+                 ['green', 'swir2'])\
                  .divide(10000).addBands(image.select('QA60'))\
                  .set('solar_azimuth',image.get('MEAN_SOLAR_AZIMUTH_ANGLE'))\
                  .set('solar_zenith',image.get('MEAN_SOLAR_ZENITH_ANGLE'))
@@ -365,4 +365,4 @@ class prepareTS:
             filled2 = ee.ImageCollection(composites2.map(lambda image: gapFillS2(image))).toBands()
             filled = filled1.addBands(filled2)
 
-        return filled.regexpRename('^(.{0})', 'band')
+        return filled.regexpRename('^(.{0})', 'imageT')
