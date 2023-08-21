@@ -1,14 +1,21 @@
-import ee
+import os
 from typing import Union
-from geemap import ee_to_pandas
-from sklearn.ensemble import RandomForestClassifier
-from mapie import MapieClassifier
+from pathlib import Path
+
+import numpy as np
 import pandas as pd
 import rasterio
+from rasterio.plot import reshape_as_image
+import ee
+from sklearn.ensemble import RandomForestClassifier
 
-from pathlib import Path
-from rasterio.plot import reshape_as_raster, reshape_as_image
-import numpy as np
+from geemap import ee_to_pandas
+
+from mapie.calibration import MapieCalibrator
+from mapie.metrics import top_label_ece
+
+from geedim.download import BaseImage
+from geeml.utils import eeprint
 
 # Parralel processing
 import concurrent.futures
@@ -28,47 +35,56 @@ class prepareModel:
         self.inferenceImage = inferenceImage
         self.bandNames = bandNames
 
-    def _UQ(self) -> Union[ee.FeatureCollection, ee.FeatureCollection, ee.FeatureCollection]:
+    def _UQ(self, fold:int) -> Union[ee.FeatureCollection, ee.FeatureCollection, ee.FeatureCollection]:
         """function to apply data splitting appropriate when conformal prediction is used.
 
         Returns:
             training, validation and calibration dataset (ee.FeatureCollections)"""
         
-        # take a stratified random sample of 10% of the data
-        nClusters = self.dataset.aggregate_array('cluster').distinct()
-
-        def nPoints(cluster, proportion):
-            """function to compute the number of points to be taken from each cluster"""
-            return self.dataset.filter(ee.Filter.eq('cluster', cluster)).size().multiply(proportion).round()
+        def train_test_split(split: float)-> Union[ee.FeatureCollection, ee.FeatureCollection]:
+            """Function to split a dataset into two portions based on train portion (split). Results in 
+               a near stratified sample. There is statistical error associated with random.
+            
+            Args
+                split (float): train proportion. Will not return exact number of samples
+                
+            Returns
+                train (ee.FeatureCollection), test (ee.FeatureCollection) """
+            
+            ## define fraction for training (remainder is for testing)
+            data = self.dataset.randomColumn(seed=42)
+            ## divide into training and testing sets based on the split
+            training = data.filter(ee.Filter.lt('random', split))
+            validation = data.filter(ee.Filter.gte('random', split))
+            return training, validation
         
-        # for each cluster get npoints.
-        calibration = nClusters.map(lambda cluster: ee.List(self.dataset.filter(ee.Filter.eq('cluster', cluster)))\
-                                    .slice(0, nPoints(cluster, 0.1))).flatten()
-        remainder = nClusters.map(lambda cluster: ee.List(self.dataset.filter(ee.Filter.eq('cluster', cluster)))\
-                                    .slice(nPoints(cluster, 0.1), nPoints(cluster, 1)).add(1)).flatten()
-        #choose a fold
-        training = remainder.filter(ee.Filter.neq("cluster", self.seed))
-        validation = remainder.filter(ee.Filter.eq("cluster", self.seed))
+        remainder, calibration = train_test_split(split = 0.9)
+
+        # Choose a fold (self.seed is equal to the fold)
+        training = remainder.filter(ee.Filter.neq("cluster", fold))
+        validation = remainder.filter(ee.Filter.eq("cluster", fold))
         return training, validation, calibration
     
     @property
-    def calibrationData(self) -> ee.FeatureCollection:
+    def calibrationData(self) -> pd.DataFrame:
         """function to get calibration data as a pandas dataframe
 
         Returns:
             ee.FeatureCollection: calibration data"""
-        _, _, calibration = self._UQ()
+        #selected fold is irrelevant here. fold is only used to create train + val datasets
+        _, _, calibration = self._UQ(fold = 1)
         cal = ee_to_pandas(calibration)
-        return cal
+        X_cal, y_cal = cal[self.bandNames.getInfo()].values, cal[[self.responseCol]].values.squeeze()
+        return X_cal, y_cal
     
     @property
-    def fittedClassifier(self) -> ee.Image:
+    def fittedClassifier(self) -> RandomForestClassifier:
         """function to fit a random forest model on the combined train and validation data
         
         Returns:
             scikit learn RandomForest classifer: classified image with accuracy and confusion matrix as properties"""
 
-        training, validation, _ = self._UQ()
+        training, validation, _ = self._UQ(fold = 1)
         train = ee_to_pandas(training)
         val = ee_to_pandas(validation)
         df = pd.concat([train, val])
@@ -77,23 +93,37 @@ class prepareModel:
                                              min_samples_leaf=1, max_features=20, bootstrap=True,
                                              oob_score=False, n_jobs=-1, random_state=0, verbose=0,
                                              warm_start=False, class_weight=None)
-        classifier.fit(df[self.bandNames], df[[self.responseCol]])
+        classifier.fit(df[self.bandNames.getInfo()], df[[self.responseCol]])
         return classifier
     
     @property
-    def conformalPredictor(self) -> ee.Image:
+    def calibratedClassifier(self):
 
-        cal = self.calibrationData
-        X_cal, y_cal = cal[self.bandNames].values, cal[[self.responseCol]].values.squeeze()
+        X_cal, y_cal = self.calibrationData
         clf = self.fittedClassifier
-        # Initialize the Conformal Prediction classifier
-        confPredictor = MapieClassifier(estimator=clf, cv="prefit", method="raps")
-        confPredictor.fit(X_cal, y_cal)
-        return confPredictor
+
+        mapie_reg = MapieCalibrator(estimator=clf, cv="prefit", calibrator="isotonic")
+        mapie_reg.fit(X_cal, y_cal)
+        return mapie_reg
     
-    def inference(self, infile, model, outfile, patchSize, num_workers=4):
+    def inference(self, mode : str, infile: str, model, confModel, outfile : str, patchSize : int, num_workers : int = 4):
         """
         Run inference on infile (Geotiff) using trained model.
+
+        Args:
+            mode (str): one of 'sets', 'predict', 'predict_proba' or all. Defaults to 'all'
+            infile (str):
+            model: a model with a predict and predict_proba method
+            confModel (mapie classifier): Calibrated conformal predictor based on the MAPIE package.
+            outfile (str): File path and file name to save output geoTiff files
+            patchSize (int): The height and width dimensions of the patch to process
+            num_workers (int): The number of core to utilise during parralel processing
+
+        Returns:
+            multiband (n_classes +2) geotiff in 'all' mode.
+            1) A multiband (number of bands equal to the n classes) geotiff ('set'),
+            2) A single band geotiff for highest probability (argmax) class ('predict'),
+            3) A single band geotiff for the probability of the argmax class ('predict_proba')
 
         """
 
@@ -125,19 +155,45 @@ class prepareModel:
                         # Take full image and reshape into long 2d array (nrow * ncol, nband) for classification
                         new_arr = i_arr.reshape(nPixels, nBands)#reshape 3d array to 2d array that matches the training data table from earlier
                         bandnames = list(src.descriptions)
-                        result_ = model.predict(pd.DataFrame(new_arr, columns = bandnames).fillna(0))
-                        # # Reshape our classification map back into a 2D matrix so we can save it as an image
-                        result = result_.reshape(i_arr[:, :, 0].shape).astype(np.float64)
+                        data = pd.DataFrame(new_arr, columns = bandnames).fillna(0)
+                        if mode == 'sets':
+                            _, y_ps_score = confModel.predict(data, alpha = 0.1)
+                            result = y_ps_score.reshape([i_arr.shape[0],i_arr.shape[1], model.n_classes_]).astype(np.float64)
+                            nbands = model.n_classes_
+                        elif mode == 'predict':
+                            result = model.predict(data)
+                            # # Reshape our classification map back into a 2D matrix so we can save it as an image
+                            result = result.reshape(i_arr[:, :, 0].shape).astype(np.float64)
+                            nbands = 1
+                        elif mode == 'predict_proba':
+                            result = model.predict_proba(data)
+                            result = result[~np.isnan(result)]
+                            # # Reshape our classification map back into a 2D matrix so we can save it as an image
+                            result = result.reshape(i_arr[:, :, 0].shape).astype(np.float64)
+                            nbands = 1
+                        elif mode == 'all':
+                            y_pred_score, y_ps_score = confModel.predict(data, alpha = 0.1)
+                            #  predict
+                            pred = y_pred_score.reshape(i_arr[:, :, 1].shape).astype(np.float64)
+                            print('preds', pred.shape)
+                            #  sets
+                            sets = y_ps_score.reshape([i_arr.shape[0],i_arr.shape[1], model.n_classes_]).astype(np.float64)
+                            print('sets',sets.shape) 
+                            # predict_proba
+                            result = model.predict_proba(data)
+                            result = result[~np.isnan(result)]
+                            probs = result.reshape(i_arr[:, :, 1].shape).astype(np.float64)
+                            print('probs',probs.shape)
+                            # Combine results along the third axis as bands
+                            result = np.dstack([pred[:,:, np.newaxis], probs[:,:, np.newaxis], sets])
+                            nbands = model.n_classes_+2
 
                     with write_lock:
-                        dst.write(result, 1, window=window)
-                        # bar.update(1)
+                        dst.write(result, nbands, window=window)
 
-                # We map the process() function over the list of
-                # windows.
+                # We map the process() function over the list of windows.
                 with tqdm(total=len(windows), desc = os.path.basename(outfile)) as pbar:
                     with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
-                        # executor.map(process, windows)
                         futures = {executor.submit(process, window): window for window in windows}
                         try:
                             for future in concurrent.futures.as_completed(futures):
@@ -148,28 +204,6 @@ class prepareModel:
                             logger.info('Cancelling...')
                             executor.shutdown(wait=False, cancel_futures=True)
                             raise ex
-    
-    def localInference(self, mode:str, outFile: str, proj: str = 'EPSG:4326') -> ee.Image:
-        """function to make local inference on an image
-
-        Args:
-            image (ee.Image): image to be classified
-            classifier (ee.Classifier): trained classifier or conformal predictor
-
-        Returns:
-            ee.Image: classified image"""
-        
-        # Download the image- uses geedim
-        BaseImage(self.inferenceImage).download(outFile, crs= proj, region = aoi.geometry(),
-                                                 scale = 1000, overwrite=True, num_threads=20)
-        
-        if mode == 'UQ':
-            classifier = self.conformalPredictor
-        elif mode == 'RF':
-            classifier = self.fittedClassifier
-        
-        # Run inference
-        self.inference(model = classifier, infile = outFile, outfile = outFile, patchSize = 128, num_workers=10)
 
     def _kFoldCV(self, fold: int, uq: bool = False):
         """function to run k-fold cross validation
@@ -180,17 +214,15 @@ class prepareModel:
         Returns:
             ee.Image: classified image with accuracy and confusion matrix as properties"""
         
-        self.seed = fold
-        
         #number of classes:
         classorder = self.dataset.aggregate_histogram(self.responseCol).keys().map(lambda number: ee.Number.parse(number))
 
         if uq:
-            training, validation, calibration = self._UQ()
+            training, validation, _ = self._UQ(fold = fold)
         else:
             #choose a fold
-            training = self.dataset.filter(ee.Filter.neq("cluster", self.seed))
-            validation = self.dataset.filter(ee.Filter.eq("cluster", self.seed))
+            training = self.dataset.filter(ee.Filter.neq("cluster", fold))
+            validation = self.dataset.filter(ee.Filter.eq("cluster", fold))
 
         #train and apply classifier
         classifier = ee.Classifier.smileRandomForest(**{
@@ -226,6 +258,6 @@ class prepareModel:
 
         return classified
     
-    def kFoldCV(self, nFolds: int) -> ee.ImageCollection:
-        result = ee.ImageCollection(ee.List.sequence(0,nFolds-1).map(lambda fold: self._kFoldCV(fold)))
+    def kFoldCV(self, nFolds: int, uq: bool = False) -> ee.ImageCollection:
+        result = ee.ImageCollection(ee.List.sequence(0,nFolds-1).map(lambda fold: self._kFoldCV(fold, uq = uq)))
         return result
