@@ -2,7 +2,9 @@ import ee
 from typing import Union
 
 class prepareTS:
-    def __init__(self, Date_Start: ee.Date = None,Date_End: ee.Date = None,day_int: int = None,study_area: ee.Geometry = None,CLOUD_THRESH: int = None,BANDS: Union[list, dict] = None):
+    def __init__(self, Date_Start: ee.Date = None,Date_End: ee.Date = None,
+                 day_int: int = None,study_area: ee.Geometry = None,
+                 CLOUD_THRESH: int = None,BANDS: Union[list, dict] = None):
         """Pre-process an image collection in preparration for a time-series problem
         
         Args: 
@@ -19,8 +21,8 @@ class prepareTS:
         # Example Usuage
         
         # Start and end dates for time series
-        Date_Start = ee.Date('2017-01-01');
-        Date_End = ee.Date('2017-12-31');
+        Date_Start = ee.Date('2017-01-01')
+        Date_End = ee.Date('2017-12-31')
 
         # how many days to summarise in each image e.g 30 days = 12 images per year
         day_int = 30; #step size
@@ -363,4 +365,4 @@ class prepareTS:
             filled2 = ee.ImageCollection(composites2.map(lambda image: gapFillS2(image))).toBands()
             filled = filled1.addBands(filled2)
 
-        return filled.regexpRename('^(.{0})', 'band')
+        return filled.regexpRename('^(.{0})', 'imageT')

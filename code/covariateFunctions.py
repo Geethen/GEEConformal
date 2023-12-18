@@ -13,8 +13,8 @@ class prepareCovariates:
  
     def _addRotatedCoords(self, ang: int) -> ee.Image:
         """
-        //adds bands with coordinates rotated to account for spatial autocorrelation
-        // Reference: Møller, A. B., Beucher, A. M., Pouladi, N., & Greve, M. H. (2020).  
+        Adds bands with coordinates rotated to account for spatial autocorrelation
+        Reference: Møller, A. B., Beucher, A. M., Pouladi, N., & Greve, M. H. (2020).  
         Oblique geographic coordinates as covariates for digital soil mapping. Soil, 6(2), 269-289.
         """
         ang = ee.Number(ang).multiply(3.141592653589793)

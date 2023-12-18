@@ -1,0 +1,11 @@
+earthengine-api
+pytest
+pytest-mock
+geemap
+scikit-learn
+mapie
+pandas
+rasterio
+numpy
+tqdm 
+futures
