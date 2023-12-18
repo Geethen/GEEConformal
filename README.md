@@ -23,10 +23,10 @@
     <img src="./images/logo2_GEEML.png" alt="Logo" width="400" height="400">
   </a>
 
-<h3 align="center">Invasive Tree Species mapping</h3>
+<h3 align="center">Uncertainty Quantification for Google Earth Engine</h3>
 
   <p align="center">
-    A 8-step workflow that uses time series satellite data (Sentinel-1, Sentinel-2 L1C and/or Sentinel-2 L2A) and Google Earth Engine to map invasive tree species.
+    Quantify uncertainty using conformal prediction for classification and regresion tasks in Google Earth Engine. Additional, 8-step workflow that uses time series satellite data (Sentinel-1, Sentinel-2 L1C and/or Sentinel-2 L2A) and Google Earth Engine to map invasive tree species.
     <br />
     <a href="https://github.com/Geethen/Invasive_Species_Mapping/blob/main/example_usuage/end_to_end_example.ipynb"><strong>Run through an end-to-end example»</strong></a>
     <br />
@@ -67,16 +67,16 @@
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
-This Github repository contains examples to make classification workflows easier. It includes functionality to create cloud-free image composites for multiple time steps. Despite the main focus on invasive tree species, the functionality that is provided is directly applicable to any classification workflow that relies on time series information from Sentinel-1 and Sentinel-2 alone or combined.
+This Github repository contains the code for the research paper "Uncertainty quantification for probabilistic machine learning in earth observation using conformal prediction". It includes functionality to create gap filled cloud-free image composites for multiple time steps, spatial cross validation and conformal prediction.
 
 ### Motivation
-Classification workflows follow the same steps and use similar code, with the input (reference points) data usually the only thing changing. It therefore is sensible to provide this boiler plate code for more experienced programmers to build on or for more early-stage programmers to use as is and reduce/remove programming barriers to entry.
+Uncertainty Quantification (UQ) provides information on prediction quality and can allow for comparisons and itegration of datasets. Conformal prediction is currently the only UQ framework that can provide pixel wise uncertainty information with valid coverage (i.e., if a 0.9 confidence level is specified, alpha = 0.1, the prediction regions will contain the actual value with a 90% probability).
 
 **Features**
-* Create cloud-free regular image composites of Sentinel-2 (and Sentinel-1).
-* Visualise and export intermediate and final inputs and outputs.
-* Import refernce points into Google Earth Engine.
-* Transform coordinates and add as additional covariates with topographic variables (for example, elevation, CHILI, slope and aspect).
+* GEE-Native Conformal classifier and regressor support
+* Create cloud-free image composites of Sentinel-2 (and Sentinel-1).
+* Examples demonstrate end-to-end examples that include, visualisation, API-based imports and exports, coomputation of additional topographic and coordinate-transformed variables.
+* Spatial cross-validation.
 
 <!-- GETTING STARTED -->
 ## Getting Started
@@ -120,7 +120,7 @@ _For more examples, please refer to the [Example usuage folder](https://github.c
 ## Roadmap
 
 - [ ] Add support for Landsat
-- [ ] Add additional groups of covariates
+- [ ] Add support for mondrian conformal prediction
 - [ ] Add more examples
 
 See the [open issues](https://github.com/Geethen/geeml/issues) for a full list of proposed features (and known issues).
@@ -174,7 +174,7 @@ Geethen Singh - [@Geethen](https://twitter.com/Geethen) - geethen.singh@gmail.co
 * [University of Stellenbosch](https://www.sun.ac.za/)
 * [University of Cape Town](https://www.uct.ac.za/)
 
-The code provided here has been ported from code originally written by Glenn Moncrieff in GEE JavaScript.
+The Invasive Species Mapping code provided here has been ported from code originally written by Glenn Moncrieff in GEE JavaScript.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
