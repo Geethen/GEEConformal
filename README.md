@@ -47,7 +47,7 @@
   <ol>
     <li><a href="#about-the-project">About The Project<a></li>
     <li><a href="#getting-started">Getting Started<a></li></li>
-    <li><a href="#usuage">Basic Usuage</a><ul>
+    <li><a href="#usuage-examples">Usuage Examples</a><ul>
         <li><a href="#javascript">JavaScript</a></li>
         <li><a href="#python">Python</a></li></ul>
     </li>
