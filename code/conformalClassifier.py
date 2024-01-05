@@ -1,6 +1,7 @@
 import ee
 from geeml.utils import eeprint
 
+# The conformalFeatureClassifier class contains methods to calibrate, evaluate and perform inference for a feature collection
 class conformalFeatureClassifier(object):
     def __init__(self, data: ee.FeatureCollection, bands: list, alpha: float, split: float, label: str, version: str):
         self.data = data
@@ -70,7 +71,8 @@ class conformalFeatureClassifier(object):
         self.calibration = self.data.filter(ee.Filter.lt('random', self.split))
         self.test = self.data.filter(ee.Filter.gte('random', self.split))
 
-    # Combine function for calibration
+    # Function 5
+    # Combine functions for calibration
     def calibrate(self):
         """
         Calibrates the conformal classifier model
@@ -172,6 +174,7 @@ class conformalFeatureClassifier(object):
         )
         return ee.Feature(None,{'CorrectSets':result})
 
+    # Function 4
     # Combine functions for evaluation of conformal predictor
     def evaluate(self):
         """
