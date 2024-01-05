@@ -87,7 +87,8 @@ For the [end-to-end example provided](https://github.com/Geethen/Invasive_Specie
 
 
 <!-- USAGE EXAMPLES -->
-<!-- JavaSScript -->
+<!-- JavaScript -->
+## JavaScript
 ## Basic usage - JavaScript
 
 The repository with all GEE conformal JS code can be accessed using this link: [https://code.earthengine.google.com/?accept_repo=users/geethensingh/conformal](https://code.earthengine.google.com/?accept_repo=users/geethensingh/conformal)
@@ -132,6 +133,7 @@ var infFunctions = require('users/geethensingh/conformal:inferenceConformalImage
 var QHAT = 0.06067845112312009; // From calibration script
  ```
 <!-- Python -->
+## Python
 ## Basic usage - Python
 
 The GEE-Python conformal classifiers can be used in a similar fashion to the JavaScript modules and must be loaded by cloning the github repo (as shown below)
