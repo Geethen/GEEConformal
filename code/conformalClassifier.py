@@ -412,7 +412,7 @@ class conformalImageClassifier(object):
                                              'geometry': image.geometry(),
                                              'scale': self.scale,
                                              'tileScale': 16,
-                                             'maxPixels': 1e9}).getNumber('label')
+                                             'maxPixels': 1e9}).getNumber(self.label)
         return inclusion.set('correctSets', correctSets).set('nPixels', nPixels).copyProperties(image)
     
     # Function 3
