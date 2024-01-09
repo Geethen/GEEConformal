@@ -1,4 +1,4 @@
-GEDI_plot.ipynb - code to create publication figure (Figure 6).  
+GEDI_plot.ipynb - code to create publication figure (Figure 5).  
 
 gee_image_upload.ipynb - code to upload images into a GEE imagecollection programatically using geeup.  
 
