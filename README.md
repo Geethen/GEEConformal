@@ -26,7 +26,7 @@
 <h3 align="center">Uncertainty Quantification for Google Earth Engine</h3>
 
   <p align="center">
-    Quantify uncertainty using conformal prediction for classification and regresion tasks in Google Earth Engine. Additional, 8-step workflow that uses time series satellite data (Sentinel-1, Sentinel-2 L1C and/or Sentinel-2 L2A) and Google Earth Engine to map invasive tree species.
+    Quantify uncertainty using conformal prediction for classification and regression tasks in Google Earth Engine. Additional, 8-step workflow that uses time series satellite data (Sentinel-1, Sentinel-2 L1C and/or Sentinel-2 L2A) and Google Earth Engine to map invasive tree species.
     <br />
     <a href="https://github.com/Geethen/Invasive_Species_Mapping/blob/main/example_usuage/end_to_end_example.ipynb"><strong>Run through an end-to-end example»</strong></a>
     <br />
