@@ -63,7 +63,9 @@
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
-This Github repository contains the code for the research paper ["Uncertainty quantification for probabilistic machine learning in earth observation using conformal prediction"](https://arxiv.org/pdf/2401.06421). It includes functionality to quantify uncertainty using conformal prediction,  create gap filled cloud-free image composites for multiple time steps and spatial cross validation.
+This Github repository contains the code for the [arxiv](https://arxiv.org/pdf/2401.06421), [peer-reviewed](https://www.nature.com/articles/s41598-024-65954-w) and [ICLR 24 short version](https://ml-for-rs.github.io/iclr2024/camera_ready/papers/6.pdf) research paper "Uncertainty quantification for probabilistic machine learning in earth observation using conformal prediction". It includes functionality to quantify uncertainty using conformal prediction,  create gap filled cloud-free image composites for multiple time steps and spatial cross validation.
+
+For a more gentle introduction and example use of conformal prediction for Dynamic world refer to [this medium blogpost](https://medium.com/@coachgeets/uncertainty-quantification-in-google-earth-engine-using-conformal-prediction-5e0dd3850564)
 
 ### Motivation
 Uncertainty Quantification (UQ) provides information on prediction quality and can allow for comparisons and itegration of datasets. Conformal prediction is currently the only UQ framework that can provide pixel wise uncertainty information with valid coverage (i.e., if a 0.9 confidence level is specified, alpha = 0.1, the prediction regions will contain the actual value with a 90% probability).
@@ -255,5 +257,5 @@ The Invasive Species Mapping code provided here has been ported from code origin
 [license-shield]: https://img.shields.io/github/license/Geethen/GEEConformal.svg?style=for-the-badge
 [license-url]: https://github.com/Geethen/GEEConformal/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: linkedin.com/in/geethen-singh-a06660106
+[linkedin-url]: https://linkedin.com/in/geethen-singh-a06660106
 [product-screenshot]: images/screenshot.png
