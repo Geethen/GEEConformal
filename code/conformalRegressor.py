@@ -1,165 +1,372 @@
 import ee
+from typing import Union
 from geeml.utils import eeprint
 
-class conformalRegressor(object):
-    def __init__(self, inferenceImage: ee.Image, calibration: ee.FeatureCollection, test: ee.FeatureCollection, responseCol:str, alpha: float):
-        self.inferenceImage = inferenceImage
-        self.propertyNames = inferenceImage.bandNames()
-        self.alpha = alpha
-        self.calibration = calibration
-        self.test = test
-        self.responseCol = responseCol
+# steps
+# Calibration
+    # compute nonconformity scores
+    # compute qHat using qLevel
+# Evaluation
+    # check average prediction width
+    # Check empirical marginal
+# Inference
+    # make predictions
+    # add and subtract qhat to get upper and lower bound. 
+    # compute length
 
+class conformalFeatureRegressor(object):
+    """
+    A class for calibrating and evaluating a conformal predictor to perform inference for a regression task.
+    An input FeatureCollection with properties of the reference (label) and predicted values (bands).
+    The output can be in the form of a FeatureCollection or an ImageCollection. Currently the only method supported
+    is based on the absolute residuals.
+    """
+    def __init__(self, data: ee.FeatureCollection, bands: list, alpha: float, label: str, version: str):
+        """
+        Args:
+            data (ee.FeatureCollection): A FeatureCollection that contains two compulsory properties;
+              1) a reference value and a 2) predcited value.
+            bands (str): A feature-level property name corresponding to the predicted values
+            alpha (float): The tolerance level between 0-1 denoting the amount of allowable errors.
+              For example, a value of 0.1 corresponds to 10% allowable errors and conversely a (1-alpha) 90% confidence level.
+            label (str): A feature-level property name corresponding to the reference/expected value.
+            version (str): A user-provided string to indicate details of the experiment or date of the experiment.
+              By default a datetime stamp is provided in the format (ddmmyyyyssmmhh)
+        """
+        self.data = data
+        self.bands = bands
+        self.alpha = alpha
+        self.label = label
+        self.version = version
+    
     # Calibration stage
-    def _computeScores(self):
-        """ Compute nonconformity scores based absolute residuals (|y-yhat|)
+    # Function 1
+    def _calibration_evaluation_split(self, split: float, seed: int = 42):
+        """
+        Split the data into a calibration and test set.
+        """
+
+        # split the calibration data into training and validation sets
+        # add a random column with a uniform distribution
+        self.data = self.data.randomColumn(seed = seed)
+        # split data into calibration and test data
+        self.calibration = self.data.filter(ee.Filter.lt('random', split))
+        self.test = self.data.filter(ee.Filter.gte('random', split))
+
+    # Function 2
+    def calibrate(self, split: float, seed: int = 42):
+        """ Calibrate a conformal regressor on the calibration set based on absolute residual (|y-yhat|)nonconformity scores.
 
         Args:
-            calibration (ee.FeatureCollection): contains probability of each class and reference label
-            alpha (float): Where 0<alpha<1. a alpha of 0.1, implies a 90% coverage. Default = 0.1
-            responseCol (str): The name of the property that contains the reference label
+            split (float): The proportion of the data used to calibrate a conformal regressor. The remainder is used for
+             evaluating the conformal predictor.
+            seed (int): The seed used to split the data
 
         Returns:
-            (ee.Feature): ee.Feature that contains two properties qLevel and qHat
+            (ee.Feature): ee.Feature that contains two properties qLevel and qHat. Here, qLevel corresponds to
+              the quantile to be computed. For example, a alpha value of 0.1 corresponds to a quantile level of
+              0.9. qHat represents a threshold of the target variable to be estimated.
             
         """ 
+        self.split = split
+        self.seed = seed
         # Compute nonconformity scores (|y-yhat|)
         def nonConformityScores(feature):
-            return feature.set('score', (feature.getNumber(self.label).subtract(feature.getNumber(self.inferenceImage.bandNames())).abs()))
+            return feature.set('score', (feature.getNumber(self.bands).subtract(feature.getNumber(self.label)).abs()))
         # Compute quantile level (qLevel) after finite sample correction
         def qLevel():
-            return ee.Number(1).subtract(ee.Number(self.alpha))
+            self.qlevel = ee.Number(1).subtract(ee.Number(self.alpha))
+            return self.qlevel
         # Compute qLevel for nonconformity scores (qHat)
         def qHat(scores):
+            qLevel()
             return ee.Number(scores.reduce(ee.Reducer.percentile([self.qLevel.multiply(100)])))
         
+        # Split data
+        self._calibration_evaluation_split(split = self.split, seed = self.seed)
+        # Compute nonconformity scores and convert to array
         scores = self.calibration.map(lambda ft: nonConformityScores(ft)).aggregate_array('score')
-        self.qLevel = ee.Number(qLevel())
-        self.qHat = ee.Number(qHat(scores))
+        
+        # Compute qhat
+        self.qhat = ee.Number(qHat(scores))
 
-        return ee.Feature(None, {'qLevel': self.qLevel, 'qHat': self.qHat})
-
-    # Inference stage
-    def quantifyImageUncertainty(self):
+        return ee.Feature(None, {'qLevel': self.qLevel, 'qHat': self.qhat})
+    
+    # Inference Stage
+    # Function 1
+    def predict(self, input: Union(ee.Image, ee.Feature)):
         """
-        Quantify uncertainty for specified alpha using calibrated conformalPredictor
+        Quantify uncertainty for a ee.Feature or ee.Image.
 
         Args:
-            probImage (ee.Number): Quantile level (qLevel) for which to compute uncertainty
-
+            input (ee.Image or ee.Feature): If an ee.Image input is provided then a single band image should be provided
+             containing the predictions from a regressor. If a ee.Feature is provided, then a property name matching that
+             of the 'band' argument should be provided.
+        
         Returns:
-            (ee.Image): A band for binary mask for each class (0: excluded from set, 1: inluded in set)
-                and the length of each pixels' set.
+            An ee.Image or ee.Feature (corresponds to the input type) with three additional bands/properties, specifically,
+            1) lower, 2) upper and 3) width. lower corresponds to the lower bound of the prediction interval. upper corresponds
+            to the upper bound of the prediction interval. While width corresponds to the difference between the upper and lower
+            bound (upper - lower) and represents the prediction width. Owing to the absolute residual method used, all widths
+            should be the same.
+             
         """
-        feature = self._computeScores()
-        qHat = ee.Number(feature.get('qHat'))
-        qHatImage = ee.Image.constant(qHat)
-        classNames = self.probImage.bandNames()
-        def setMask(band):
-            return ee.Image(self.probImage.select([band]).gte(qHatImage).set('class',band)).toInt().rename('band')
-        # Compute binary mask for each class
-        # eeprint(classNames.map(setMask))
-        setMasks = ee.ImageCollection(classNames.map(lambda band: setMask(band)))
-        # Compute the length (number of included classes) for each set
-        setLength = ee.ImageCollection(setMasks).sum().rename('setLength')
-        return ee.Image(setMasks.toBands()).addBands(setLength)
+        # Check input type
+        if input.name().getInfo() == 'ee.Image':
+            # Create a constant image for qhat
+            qHatImage = ee.Image.constant(self.qHat)
+            # Compute the lower, upper bound of the prediction interval and the width between the two
+            lower = ee.Image(input).subtract(qHatImage).rename('lower')
+            upper = ee.Image(input).add(qHatImage).rename('upper')
+            width = upper.subtract(lower).rename('width')
+            # Add output bands to final output
+            output = input.addBands([lower, upper, width]) 
+        elif input.name().getInfo() == 'ee.Feature':
+            # Compute the lower, upper bound of the prediction interval and the width between the two
+            lower  = ee.Feature(input).getNumber(self.band).subtract(self.qhat).rename('lower')
+            upper = ee.Feature(input).getNumber(self.band).add(self.qhat).rename('upper')
+            width = upper.subtract(lower).rename('width')
+            # Add output properties to the input feature
+            output = ee.Feature(input).set({'lower': lower, 'upper': upper, 'width': width})
+        return output
 
-    # Evaluate conformalPredictor
-    def _quantifyTestUncertainty(self):
+    
+    # Evaluation stage
+    # Function 1
+    def _checkInclusion(self, feature):
         """
-        Obtain the classification sets for the test data partition
+        Checks if the predicted value falls within the upper and lower bounds of the prediction interval
 
-        Args:
-            test (ee.FeatureCollection): 
-
-        Returns:
-            ee.FeatureCollection: Contains three additional properties, 
-                1) classSet - The set for the test feature
-                2) cumProb - The sum of all the class set probabilities
-                3) refLabel - The actual label for the test point
-        """
-
-        # Create a function to iterate over the sorted probabilities.
-        def iterateOverProbabilities(feature, previous):
-
-            previous = ee.Feature(previous)
-            # Get the class name and probability of the current feature.
-            className = feature.get('class_name')
-            probability = feature.getNumber('probability')
+        Args: 
+            feature (ee.Feature): A feature with a prediction, lower and upper bound.
             
-            # Get the probability of the previous feature.
-            prevProb = previous.getNumber('probability')
+        Returns:
+            A null feature (no geometry) with a property called 'CorrectSets' and a value of 1, if the predicted
+             value falls within the prediction interval and a zero if not.
 
-            newSum = ee.Number(ee.Algorithms.If(probability.gte(self.qHat),
-                        prevProb.add(probability),
-                        prevProb))
-            
-            classNames = ee.Algorithms.If(probability.gte(self.qHat),
-                        ee.List([previous.get('class_name')]).add(className).flatten(),
-                        previous.get('class_name'))
-  
-            return ee.Feature(None, {
-                'refLabel': ee.Algorithms.String(feature.get('label')),
-                'class_name': classNames,
-                'probability': newSum
-            })            
-
-        def computeSets(id):
-            filteredCollection = featureCollection.filter(ee.Filter.eq('id', id))
-            #   cumProb serves as the first feature for iterateProbabilities
-            cumProb = ee.Feature(None).set('probability',0).set('class_name',[])
-            result = filteredCollection.iterate(iterateOverProbabilities, cumProb)
-            return result
-
-        
-        # Create a new feature with 4 properties: feature id, label, class and corresponding probability. 
-        # For each class probability, generate a feature
-        featureCollection = ee.FeatureCollection(self.test.map(lambda ft: ee.FeatureCollection(
-            self.propertyNames.map(lambda propertyName: ee.Feature(None,
-                                                                    {'id': ft.id(),
-                                                                    'label': ft.get(self.label),
-                                                                    'class_name': propertyName,
-                                                                    'probability': ee.Number(ft.get(ee.Algorithms.String(propertyName)))}))
-                                        ))).flatten()
-        # Determine the sets for each test feature
-        uid = featureCollection.aggregate_array('id').distinct()
-        sets = ee.FeatureCollection(uid.map(lambda id: computeSets(id)))
-        return sets
-
-    def evaluateUncertainty(self):
         """
-        Computes the average set size and the empirical marginal coverage
-
-        Args:
-            test (ee.FeatureCollection): 
+        prediction = feature.get(self.band)
+        lower = feature.get('lower')
+        upper = feature.get('upper')
+        result = ee.Algorithms.If(prediction.gte(lower).And(prediction.lte(upper)), # Check if the list contains the string
+          1,                       # If yes, return 1
+          0                        # If no, return 0
+        )
+        return ee.Feature(None,{'CorrectSets':result})
+    
+    # Function 2
+    def evaluate(self):
+        """
+        Evaluates the conformal classifier model
 
         Returns:
-            ee.Feature: Contains two properties, 
-                1) Avereage set size - The average set length across all pixels in the test featureCollection
-                2) Empirical marginal coverage- The (marginal) coverage achieved by the conformal predictor based on the test data
-        """
-        #  Compute average set size
-        def computeSetSize(ft):
-            return ee.Feature(None, {'setSize':ee.List(ft.get('class_name')).length()})
-        
-        
-        # Compute empirical marginal coverage (based on test set)
-        def computeCoverage(ft):
-            # searchString = ft.get('refLabel')
-            # if refLabel does not map directly to target classes (for example DW), then use below
-            searchString = ee.String(self.clsDict.get(ft.get('refLabel')))
-            sets =  ee.List(ft.get('class_name'))
-            result = ee.Algorithms.If(
-              sets.contains(searchString), # Check if the list contains the string
-              1, 0)                  # Return 1 if yes, 0 if no
-            return ee.Feature(None, {'coverage':result})
-        
-        nTest = self.test.size()
-        sets = self._quantifyTestUncertainty()
-        avgSetSize = sets.map(computeSetSize).aggregate_sum('setSize').divide(nTest)
+            An ee.Feature with three properties, the empirical marginal coverage, Average prediction
+             interval width and the version information.
 
-        coverage = sets.map(computeCoverage).aggregate_sum('coverage').divide(nTest)
-        print('Average set size:', "{:.2f}".format(avgSetSize.getInfo()))
+        """
+        # Compute lower and upper bounds of interval
+        Intervals = self.test.map(lambda input: self.predict(input))
+        
+        # Compute average set size(sum of set lengths/ number of test label pixels)
+        avgSetSize = Intervals.aggregate_mean('width')
+
+        # Evaluate Marginal coverage (based on test set): compute coverage (correct sets/total label pixels/)
+        coverage = Intervals.map(lambda ft: self._checkInclusion(ft)).aggregate_sum('CorrectSets').divide(self.test.size())
+
+        print('Average prediction width:', "{:.2f}".format(avgSetSize.getInfo()))
         print('Empirical (marginal) coverage:', "{:.2f}".format(coverage.getInfo()))
-        return ee.Feature(None, {'avgSetSize':avgSetSize, 'empiricalCoverage':coverage})
+              
+        return ee.Feature(None, {'version': self.version, 'Empirical Marginal Coverage': coverage, 'Average Prediction Width': avgSetSize})
+    
+class conformalImageRegressor(object):
+    """
+    A class for calibrating and evaluating a conformal predictor to perform inference for a regression task.
+    An input ImageCollection with a band containing the reference (label) and predicted values (bands).
+    The output can be in the form of a FeatureCollection or an ImageCollection. Currently the only method supported
+    is based on the absolute residuals.
+    """
+    def __init__(self, data: ee.FeatureCollection, bands: list, alpha: float, label: str, version: str):
+        """
+        Args:
+            data (ee.FeatureCollection): An ImageCollection that contains two compulsory bands;
+              1) a reference value and a 2) predcited value.
+            bands (str): A image-level property name corresponding to the predicted values
+            alpha (float): The tolerance level between 0-1 denoting the amount of allowable errors.
+              For example, a value of 0.1 corresponds to 10% allowable errors and conversely a (1-alpha) 90% confidence level.
+            label (str): A image-level property name corresponding to the reference/expected value.
+            version (str): A user-provided string to indicate details of the experiment or date of the experiment.
+              By default a datetime stamp is provided in the format (ddmmyyyyssmmhh)
+        """
+        self.data = data
+        self.bands = bands
+        self.alpha = alpha
+        self.label = label
+        self.version = version
+    
+    # Calibration stage
+    # Function 1
+    def _calibration_evaluation_split(self, split: float, seed: int = 42):
+        """
+        Split the data into a calibration and test set.
+        """
 
+        # split the calibration data into training and validation sets
+        # add a random column with a uniform distribution
+        self.data = self.data.randomColumn(seed = seed)
+        # split data into calibration and test data
+        self.calibration = self.data.filter(ee.Filter.lt('random', split))
+        self.test = self.data.filter(ee.Filter.gte('random', split))
+
+    # Function 2
+    def calibrate(self, image, split: float, scale: int, seed: int = 42):
+        """ Calibrate a conformal regressor on the calibration set based on absolute residual (|y-yhat|) nonconformity scores.
+
+        Args:
+            split (float): The proportion of the data used to calibrate a conformal regressor. The remainder is used for
+             evaluating the conformal predictor.
+            scale (int): The scale used to apply the reduce functions. Ideally should match native resolution of data or
+             coarser if memory limts are reached
+            seed (int): The seed used to split the data
+
+        Returns:
+            (ee.Feature): ee.Feature that contains two properties qLevel and qHat. Here, qLevel corresponds to
+              the quantile to be computed. For example, a alpha value of 0.1 corresponds to a quantile level of
+              0.9. qHat represents a threshold of the target variable to be estimated.
+            
+        """ 
+        self.split = split
+        self.scale = scale
+        self.seed = seed
+        
+        # Compute nonconformity scores (|y-yhat|)
+        def nonConformityScores(image):
+            return image.select(self.bands).subtract(image.select(self.label)).abs().rename('score')
+        # Compute quantile level (qLevel) (1-alpha). multiply quantile by 100 to compute percentile 
+        # (quantile not supported in GEE)
+        def computeQLevel():
+            self.qlevel = ee.Number(1).subtract(ee.Number(self.alpha)).multiply(100)
+        # Compute  qHat threshold based on qLevel per image
+        def computeQHat(image):
+            computeQLevel()
+            qHat = ee.Image(image).reduceRegion(**{'reducer':ee.Reducer.percentile([self.qlevel]),
+                                                'geometry': image.geometry(),
+                                                'scale': self.scale,
+                                                'tileScale': 16,
+                                                'maxPixels': 1e9}).get('score')
+            return image.set('qHat', qHat)
+        
+        # Compute aggregate qHat threshold based on qLevel
+        scores = self.test.map(lambda image: nonConformityScores(image))
+        self.qhat = scores.map(lambda img: computeQHat(img)).reduceColumns(**{
+        'reducer':ee.Reducer.percentile([self.qlevel]), 
+        'selectors': ['qHat']
+            }).values().get(0)
+                
+        return ee.Feature(None, {'version': self.version,'qLevel': self.qlevel, 'qHat': self.qhat})
+    
+    # Inference Stage
+    # Function 1
+    def predict(self, input: Union(ee.Image, ee.Feature)):
+        """
+        Quantify uncertainty for a ee.Feature or ee.Image.
+
+        Args:
+            input (ee.Image or ee.Feature): If an ee.Image input is provided then a dual band image should be provided
+             containing the predictions from a regressor and the reference/expected values. If a ee.Feature is provided,
+             then a property name matching that of the 'band' argument should be provided.
+        
+        Returns:
+            An ee.Image or ee.Feature (corresponds to the input type) with three additional bands/properties, specifically,
+            1) lower, 2) upper and 3) width. lower corresponds to the lower bound of the prediction interval. upper corresponds
+            to the upper bound of the prediction interval. While width corresponds to the difference between the upper and lower
+            bound (upper - lower) and represents the prediction width. Owing to the absolute residual method used, all widths
+            should be the same.
+             
+        """
+        # Check input type
+        if input.name().getInfo() == 'ee.Image':
+            # Create a constant image for qhat
+            qHatImage = ee.Image.constant(self.qHat)
+            prediction = input.select(self.band)
+            # Compute the lower, upper bound of the prediction interval and the width between the two
+            lower = prediction.subtract(qHatImage).rename('lower')
+            upper = prediction.add(qHatImage).rename('upper')
+            width = upper.subtract(lower).rename('width')
+            # Add output bands to final output
+            output = input.addBands([lower, upper, width]) 
+        elif input.name().getInfo() == 'ee.Feature':
+            # Compute the lower, upper bound of the prediction interval and the width between the two
+            lower  = ee.Feature(input).getNumber(self.band).subtract(self.qhat).rename('lower')
+            upper = ee.Feature(input).getNumber(self.band).add(self.qhat).rename('upper')
+            width = upper.subtract(lower).rename('width')
+            # Add output properties to the input feature
+            output = ee.Feature(input).set({'lower': lower, 'upper': upper, 'width': width})
+        return output
+
+    
+    # Evaluation stage
+    # Function 1
+    def _checkInclusion(self, image):
+        """
+        Checks if the predicted value falls within the upper and lower bounds of the prediction interval
+
+        Args: 
+            image (ee.Image): A multi-band image with the reference/expected value band and a prediction,
+             lower and upper bound band.
+            
+        Returns:
+            A binary image is returned with a band called 'CorrectSets'. Where, a value of 1, if the predicted
+             value falls within the prediction interval and a zero if not. A 'sumPixels' property is added and
+             corresponds to the total number of pixels that contain the expected value within their prediction
+             interval. Additionally, a 'nPixels' property is added and corresponds to the number of pixels there
+             in the reference band.
+
+        """
+        prediction = image.select(self.band)
+        label = image.select(self.label)
+        lower = image.select('lower')
+        upper = image.selct('upper')
+        width = image.select('width')
+        # Check if the list contains the prediction within the prediction interval. If yes, return 1. If no, return 0.
+        result = prediction.gte(lower).And(prediction.lte(upper)).rename('CorrectSets')
+        # Sum the lengths of all sets in set length image- used to compute average set size and the width.
+        sumPixels = result.addBands(width).reduceRegion(**{'reducer':ee.Reducer.sum(),
+                                              'geometry': image.geometry(),
+                                              'scale': self.scale,
+                                              'tileScale': 16,
+                                              'maxPixels': 1e9})
+        # Compute the number of pixels in test label image
+        nPixels = label.reduceRegion(**{'reducer':ee.Reducer.count(),
+                                             'geometry': image.geometry(),
+                                             'scale': self.scale,
+                                             'tileScale': 16,
+                                             'maxPixels': 1e9}).getNumber(self.label)
+        return result.set('sumPixels', sumPixels.getNumber('CorrectSets')).set('nPixels', nPixels)\
+            .set('width', sumPixels.getNumber('width')).copyProperties(image)
+    
+    # Function 2
+    def evaluate(self):
+        """
+        Evaluates the conformal classifier model
+
+        Returns:
+            An ee.Feature with three properties, the empirical marginal coverage, Average prediction
+             interval width and the version information.
+
+        """
+        # Compute lower and upper bounds of interval
+        Intervals = self.test.map(lambda input: self._checkInclusion(self.predict(input)))
+
+        # Compute the number of pixels in label test set
+        nPixelsTest = Intervals.aggregate_sum('nPixels')
+        
+        # Compute average set size(sum of set lengths/ number of test label pixels)
+        avgSetSize = Intervals.aggregate_sum('width').divide(nPixelsTest)
+
+        # Evaluate Marginal coverage (based on test set): compute coverage (correct sets/total label pixels/)
+        coverage = Intervals.aggregate_sum('sumPixels').divide(nPixelsTest)
+
+        print('Average width of prediction interval:', "{:.2f}".format(avgSetSize.getInfo()))
+        print('Empirical (marginal) coverage:', "{:.2f}".format(coverage.getInfo()))
+              
+        return ee.Feature(None, {'version': self.version, 'Empirical Marginal Coverage': coverage, 'Average Prediction Width': avgSetSize})
