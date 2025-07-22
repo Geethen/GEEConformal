@@ -233,7 +233,7 @@ class prepareModel:
             'variablesPerSplit': 20
         }).train(**{
             'features': training,
-            'classProperty':'code',
+            'classProperty':self.responseCol,
             'inputProperties': self.bandNames
         })
 
