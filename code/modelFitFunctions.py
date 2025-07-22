@@ -9,9 +9,9 @@ from rasterio.plot import reshape_as_image
 import ee
 from sklearn.ensemble import RandomForestClassifier
 
-from geemap import ee_to_pandas
+from geemap import ee_to_df
 
-from mapie.calibration import MapieCalibrator
+# from mapie.calibration import MapieCalibrator
 from mapie.metrics import top_label_ece
 
 from geedim.download import BaseImage
@@ -73,7 +73,7 @@ class prepareModel:
             ee.FeatureCollection: calibration data"""
         #selected fold is irrelevant here. fold is only used to create train + val datasets
         _, _, calibration = self._UQ(fold = 1)
-        cal = ee_to_pandas(calibration)
+        cal = ee_to_df(calibration)
         X_cal, y_cal = cal[self.bandNames.getInfo()].values, cal[[self.responseCol]].values.squeeze()
         return X_cal, y_cal
     
@@ -85,8 +85,8 @@ class prepareModel:
             scikit learn RandomForest classifer: classified image with accuracy and confusion matrix as properties"""
 
         training, validation, _ = self._UQ(fold = 1)
-        train = ee_to_pandas(training)
-        val = ee_to_pandas(validation)
+        train = ee_to_df(training)
+        val = ee_to_df(validation)
         df = pd.concat([train, val])
         #train and apply classifier
         classifier = RandomForestClassifier(n_estimators=50, max_depth=None, min_samples_split=2,
@@ -96,15 +96,15 @@ class prepareModel:
         classifier.fit(df[self.bandNames.getInfo()], df[[self.responseCol]])
         return classifier
     
-    @property
-    def calibratedClassifier(self):
+    # @property
+    # def calibratedClassifier(self):
 
-        X_cal, y_cal = self.calibrationData
-        clf = self.fittedClassifier
+    #     X_cal, y_cal = self.calibrationData
+    #     clf = self.fittedClassifier
 
-        mapie_reg = MapieCalibrator(estimator=clf, cv="prefit", calibrator="isotonic")
-        mapie_reg.fit(X_cal, y_cal)
-        return mapie_reg
+    #     mapie_reg = MapieCalibrator(estimator=clf, cv="prefit", calibrator="isotonic")
+    #     mapie_reg.fit(X_cal, y_cal)
+    #     return mapie_reg
     
     def inference(self, mode : str, infile: str, model, confModel, outfile : str, patchSize : int, num_workers : int = 4):
         """
