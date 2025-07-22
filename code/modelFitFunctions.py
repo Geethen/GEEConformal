@@ -12,7 +12,7 @@ from sklearn.ensemble import RandomForestClassifier
 from geemap import ee_to_df
 
 # from mapie.calibration import MapieCalibrator
-from mapie.metrics import top_label_ece
+# from mapie.metrics import top_label_ece
 
 from geedim.download import BaseImage
 from geeml.utils import eeprint
